@@ -258,13 +258,12 @@ router.post('/events', requireAuth, requireOrganizer, upload.single('image'), as
 });
 
 // GET /api/organizer/notifications
-// Fetch notifications for the organizer
+// Fetch notifications created by the organizer
 router.get('/notifications', requireAuth, requireOrganizer, async (req, res) => {
   try {
     const Notification = require('../models/Notification');
-    // Fetch global notifications or notifications assigned to this user
-    // Since the schema has createdBy but no recipient, we will fetch recent ones globally for now, or you can filter.
-    const notifications = await Notification.find().sort({ createdAt: -1 }).limit(10);
+    // Fetch notifications created by this user
+    const notifications = await Notification.find({ createdBy: req.user._id }).sort({ createdAt: -1 });
     res.status(200).json(notifications);
   } catch (err) {
     console.error('Error fetching notifications:', err);
@@ -276,23 +275,51 @@ router.get('/notifications', requireAuth, requireOrganizer, async (req, res) => 
 // Create a new notification sent by the organizer
 router.post('/notifications', requireAuth, requireOrganizer, async (req, res) => {
   try {
-    const { title, message, type } = req.body;
+    const { title, message, type, durationDays } = req.body;
     if (!title || !message) {
       return res.status(400).json({ message: 'Title and message are required' });
     }
 
     const Notification = require('../models/Notification');
-    const notification = new Notification({
+    const notificationParams = {
       title,
       message,
       type: type || 'info',
       createdBy: req.user._id
-    });
+    };
+
+    if (durationDays) {
+      const days = parseInt(durationDays, 10);
+      if (!isNaN(days) && days > 0) {
+        notificationParams.expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      }
+    }
+
+    const notification = new Notification(notificationParams);
 
     await notification.save();
     res.status(201).json({ message: 'Notification sent successfully', notification });
   } catch (err) {
     console.error('Error creating notification:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE /api/organizer/notifications/:id
+// Delete a notification created by the organizer
+router.delete('/notifications/:id', requireAuth, requireOrganizer, async (req, res) => {
+  try {
+    const Notification = require('../models/Notification');
+    const notification = await Notification.findOne({ _id: req.params.id, createdBy: req.user._id });
+    
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found or you do not have permission to delete it.' });
+    }
+
+    await Notification.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Notification deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting notification:', err);
     res.status(500).json({ message: err.message });
   }
 });

@@ -40,10 +40,12 @@ export default function OrganizerDashboard() {
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [isSendNotificationModalOpen, setIsSendNotificationModalOpen] = useState(false);
+  const [isManageNotificationsModalOpen, setIsManageNotificationsModalOpen] = useState(false);
   const [newNotificationTitle, setNewNotificationTitle] = useState('');
   const [newNotificationMessage, setNewNotificationMessage] = useState('');
+  const [newNotificationDuration, setNewNotificationDuration] = useState('7');
   const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const [isDeletingNotification, setIsDeletingNotification] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -522,8 +524,8 @@ export default function OrganizerDashboard() {
                   <button type="button" className="dropdown-item" onClick={() => { setIsProfileOpen(false); setIsPasswordModalOpen(true); }}>
                     <Lock size={15} /> <span>Change Password</span>
                   </button>
-                  <button type="button" className="dropdown-item" onClick={() => { setIsProfileOpen(false); setIsSendNotificationModalOpen(true); }}>
-                    <Send size={15} /> <span>Send Notification</span>
+                  <button type="button" className="dropdown-item" onClick={() => { setIsProfileOpen(false); setIsManageNotificationsModalOpen(true); }}>
+                    <Send size={15} /> <span>Manage Notifications</span>
                   </button>
                   <div style={{ borderTop: '1px solid rgba(0,0,0,0.05)', margin: '0.4rem 0' }} />
                   <button type="button" className="dropdown-item logout" onClick={logout}>
@@ -624,6 +626,10 @@ export default function OrganizerDashboard() {
             <button style={{ background: 'none', border: 'none', textAlign: 'left', fontWeight: 600, padding: '0.5rem 0', color: '#111', display: 'flex', alignItems: 'center', gap: '8px' }}
               onClick={() => { setIsMobileMenuOpen(false); setIsPasswordModalOpen(true); }}>
               <Lock size={18} /> Change Password
+            </button>
+            <button style={{ background: 'none', border: 'none', textAlign: 'left', fontWeight: 600, padding: '0.5rem 0', color: '#111', display: 'flex', alignItems: 'center', gap: '8px' }}
+              onClick={() => { setIsMobileMenuOpen(false); setIsManageNotificationsModalOpen(true); }}>
+              <Send size={18} /> Manage Notifications
             </button>
             <button style={{ background: 'none', border: 'none', textAlign: 'left', fontWeight: 600, padding: '0.5rem 0', color: '#111', display: 'flex', alignItems: 'center', gap: '8px' }}
               onClick={() => { setIsMobileMenuOpen(false); window.location.hash = '#home'; }}>
@@ -1286,9 +1292,9 @@ export default function OrganizerDashboard() {
       {/* Modals */}
       <ChangePasswordModal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)} />
 
-      {/* Send Notification Modal */}
+      {/* Manage Notifications Modal */}
       <AnimatePresence>
-        {isSendNotificationModalOpen && (
+        {isManageNotificationsModalOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1298,7 +1304,7 @@ export default function OrganizerDashboard() {
               background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
             }}
-            onClick={() => !isSendingNotification && setIsSendNotificationModalOpen(false)}
+            onClick={() => !isSendingNotification && setIsManageNotificationsModalOpen(false)}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1307,84 +1313,134 @@ export default function OrganizerDashboard() {
               onClick={e => e.stopPropagation()}
               style={{
                 background: '#fff', borderRadius: '20px', padding: '2rem',
-                width: '90%', maxWidth: '400px', boxShadow: '0 24px 48px rgba(0,0,0,0.2)'
+                width: '90%', maxWidth: '550px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 48px rgba(0,0,0,0.2)'
               }}
             >
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Send size={24} color="#7c3aed" /> Broadcast
-              </h2>
-              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1.5rem' }}>Send a notification to all users and clubs.</p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#111', marginBottom: '0.5rem' }}>Title</label>
-                  <input
-                    type="text"
-                    value={newNotificationTitle}
-                    onChange={(e) => setNewNotificationTitle(e.target.value)}
-                    placeholder="Enter notification title"
-                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #eaeaea', fontSize: '0.95rem', outline: 'none' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#111', marginBottom: '0.5rem' }}>Message</label>
-                  <textarea
-                    value={newNotificationMessage}
-                    onChange={(e) => setNewNotificationMessage(e.target.value)}
-                    placeholder="Type your message here..."
-                    rows={4}
-                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #eaeaea', fontSize: '0.95rem', outline: 'none', resize: 'none' }}
-                  />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Send size={24} color="#7c3aed" /> Manage Notifications
+                </h2>
+                <button onClick={() => setIsManageNotificationsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}><X size={24} /></button>
+              </div>
+              
+              <div style={{ background: '#f9fafb', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e5e7eb', marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: '#374151' }}>Create New Broadcast</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <input
+                      type="text"
+                      value={newNotificationTitle}
+                      onChange={(e) => setNewNotificationTitle(e.target.value)}
+                      placeholder="Enter notification title"
+                      style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #eaeaea', fontSize: '0.95rem', outline: 'none' }}
+                    />
+                  </div>
+                  <div>
+                    <textarea
+                      value={newNotificationMessage}
+                      onChange={(e) => setNewNotificationMessage(e.target.value)}
+                      placeholder="Type your message here..."
+                      rows={3}
+                      style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #eaeaea', fontSize: '0.95rem', outline: 'none', resize: 'none' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4b5563', whiteSpace: 'nowrap' }}>Expires in (days):</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={newNotificationDuration}
+                        onChange={(e) => setNewNotificationDuration(e.target.value)}
+                        style={{ width: '70px', padding: '0.5rem', borderRadius: '6px', border: '1px solid #eaeaea', fontSize: '0.95rem', outline: 'none' }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!newNotificationTitle.trim() || !newNotificationMessage.trim()) return;
+                        setIsSendingNotification(true);
+                        try {
+                          const { data } = await api.post('/organizer/notifications', {
+                            title: newNotificationTitle,
+                            message: newNotificationMessage,
+                            durationDays: newNotificationDuration
+                          });
+                          setNotifications(prev => [data.notification, ...prev]);
+                          setNewNotificationTitle('');
+                          setNewNotificationMessage('');
+                          setNewNotificationDuration('7');
+                        } catch (err: any) {
+                          const errMsg = err.response?.data?.message || err.message || 'Failed to broadcast';
+                          alert(`Error: ${errMsg}`);
+                        } finally {
+                          setIsSendingNotification(false);
+                        }
+                      }}
+                      disabled={isSendingNotification || !newNotificationTitle.trim() || !newNotificationMessage.trim()}
+                      style={{
+                        padding: '0.6rem 1.25rem', borderRadius: '8px', border: 'none',
+                        background: '#7c3aed', color: '#fff', fontWeight: 600, cursor: (isSendingNotification || !newNotificationTitle.trim() || !newNotificationMessage.trim()) ? 'not-allowed' : 'pointer',
+                        opacity: (isSendingNotification || !newNotificationTitle.trim() || !newNotificationMessage.trim()) ? 0.7 : 1
+                      }}
+                    >
+                      {isSendingNotification ? 'Sending...' : 'Broadcast'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsSendNotificationModalOpen(false)}
-                  disabled={isSendingNotification}
-                  style={{
-                    flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #eaeaea',
-                    background: '#fff', color: '#111', fontWeight: 600, cursor: isSendingNotification ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!newNotificationTitle.trim() || !newNotificationMessage.trim()) return;
-                    setIsSendingNotification(true);
-                    try {
-                      const { data } = await api.post('/organizer/notifications', {
-                        title: newNotificationTitle,
-                        message: newNotificationMessage
-                      });
-
-                      setNotifications(prev => [data.notification, ...prev]);
-                      setNewNotificationTitle('');
-                      setNewNotificationMessage('');
-                      setIsSendNotificationModalOpen(false);
-
-                      // Also trigger a window event or broadcast channel if needed, 
-                      // but local state update is enough for this window
-                    } catch (err: any) {
-                      const errMsg = err.response?.data?.message || err.message || 'Failed to broadcast';
-                      alert(`Error: ${errMsg}`);
-                      console.error(err);
-                    } finally {
-                      setIsSendingNotification(false);
-                    }
-                  }}
-                  disabled={isSendingNotification || !newNotificationTitle.trim() || !newNotificationMessage.trim()}
-                  style={{
-                    flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none',
-                    background: '#7c3aed', color: '#fff', fontWeight: 600, cursor: (isSendingNotification || !newNotificationTitle.trim() || !newNotificationMessage.trim()) ? 'not-allowed' : 'pointer',
-                    opacity: (isSendingNotification || !newNotificationTitle.trim() || !newNotificationMessage.trim()) ? 0.7 : 1
-                  }}
-                >
-                  {isSendingNotification ? 'Sending...' : 'Broadcast'}
-                </button>
+              <div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: '#374151' }}>Past Broadcasts</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                  {notifications.length === 0 ? (
+                    <div style={{ fontSize: '0.9rem', color: '#888', textAlign: 'center', padding: '2rem 0' }}>No broadcast notifications found.</div>
+                  ) : (
+                    notifications.map(n => {
+                      const isExpired = new Date(n.expiresAt) < new Date();
+                      return (
+                        <div key={n._id} style={{ background: '#fff', border: '1px solid #eaeaea', borderRadius: '10px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#111' }}>{n.title}</h4>
+                              {isExpired ? (
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#fee2e2', color: '#dc2626', padding: '2px 6px', borderRadius: '4px' }}>EXPIRED</span>
+                              ) : (
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#dcfce7', color: '#16a34a', padding: '2px 6px', borderRadius: '4px' }}>ACTIVE</span>
+                              )}
+                            </div>
+                            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: '#555', lineHeight: '1.4' }}>{n.message}</p>
+                            <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                              Created: {new Date(n.createdAt).toLocaleDateString()} • Expires: {new Date(n.expiresAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              if (!window.confirm('Are you sure you want to delete this notification?')) return;
+                              setIsDeletingNotification(n._id);
+                              try {
+                                await api.delete(`/organizer/notifications/${n._id}`);
+                                setNotifications(prev => prev.filter(notif => notif._id !== n._id));
+                              } catch (err: any) {
+                                alert(`Failed to delete: ${err.response?.data?.message || err.message}`);
+                              } finally {
+                                setIsDeletingNotification(null);
+                              }
+                            }}
+                            disabled={isDeletingNotification === n._id}
+                            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '6px', borderRadius: '6px', cursor: isDeletingNotification === n._id ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                            title="Delete Notification"
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#fecaca'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = '#fee2e2'}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>

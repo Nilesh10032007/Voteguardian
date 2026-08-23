@@ -198,10 +198,18 @@ function AppContent() {
     if (currentRoute === '#gallery')          return <Gallery />;
     if (currentRoute === '#organizer-setup') {
       if (!isLoggedIn) return null;
+      if (user?.role !== 'organizer' && user?.role !== 'admin') {
+        window.location.hash = '#home';
+        return null;
+      }
       return <OrganizerSetup />;
     }
     if (currentRoute.startsWith('#organizer-dashboard')) {
       if (!isLoggedIn) return null;
+      if (user?.role !== 'organizer' && user?.role !== 'admin') {
+        window.location.hash = '#home';
+        return null;
+      }
       return <OrganizerDashboard />;
     }
 
