@@ -121,6 +121,11 @@ const ACADEMIC_PROGRAMS: Record<string, string[]> = {
 
 export default function EditProfile() {
   const { user, updateProfile, uploadAvatar, logout } = useAuth();
+  
+  // Add avatar helper
+  const avatarFallback = `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`;
+  const getAvatar = (url: string | undefined) => (url && url !== 'undefined') ? url : avatarFallback;
+
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash || '';
     if (hash.includes('tab=settings') || hash.includes('settings')) return 'settings';
@@ -486,7 +491,7 @@ export default function EditProfile() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', padding: '0 8px' }}>
               <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#EAEAEA', overflow: 'hidden', flexShrink: 0 }}>
                 {profileData.avatar ? (
-                  <img src={profileData.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={getAvatar(profileData.avatar)} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.src = avatarFallback; }} />
                 ) : (
                   <UserIcon size={24} color="#888" style={{ margin: '12px' }} />
                 )}
@@ -604,7 +609,7 @@ export default function EditProfile() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', padding: '12px', background: '#F9FAFB', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
                   <div style={{ width: 42, height: 42, borderRadius: '50%', background: '#EAEAEA', overflow: 'hidden', flexShrink: 0 }}>
                     {profileData.avatar ? (
-                      <img src={profileData.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={getAvatar(profileData.avatar)} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.src = avatarFallback; }} />
                     ) : (
                       <UserIcon size={20} color="#888" style={{ margin: '11px' }} />
                     )}
@@ -714,7 +719,7 @@ export default function EditProfile() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                   <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F3F4F6', overflow: 'hidden', border: '3px solid #FFF', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
                     {profileData.avatar ? (
-                      <img src={profileData.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={getAvatar(profileData.avatar)} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.src = avatarFallback; }} />
                     ) : (
                       <UserIcon size={40} color="#9CA3AF" style={{ margin: '27px' }} />
                     )}

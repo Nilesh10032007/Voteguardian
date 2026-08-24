@@ -597,7 +597,7 @@ router.post('/scan-public', async (req, res) => {
   }
 
   // 1. Verify the Magic Link
-  const link = await ScannerLink.findOne({ token: scannerToken, isActive: true });
+  const link = await ScannerLink.findOne({ token: String(scannerToken), isActive: true });
   if (!link) {
     return res.status(403).json({ message: "Invalid or revoked scanner link." });
   }

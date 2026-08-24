@@ -26,7 +26,9 @@ export default function PendingApprovalListener() {
       const id = sessionStorage.getItem(STORAGE_KEY);
       if (!id || cancelled) return;
       try {
-        const { data } = await api.get<{ status: string; title?: string }>(`/events/submission/${id}`);
+        const sanitizedId = String(id).replace(/[^a-zA-Z0-9]/g, '');
+        if (!sanitizedId) return;
+        const { data } = await api.get<{ status: string; title?: string }>(`/events/submission/${sanitizedId}`);
         if (data.status === 'approved') {
           clearPendingSubmissionId();
           if (!cancelled) setApprovedTitle(data.title || 'Your event');
