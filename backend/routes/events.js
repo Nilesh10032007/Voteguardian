@@ -21,7 +21,7 @@ const User = require('../models/User');
 
 // @desc    Upload file for custom questions
 // @route   POST /api/events/upload
-router.post('/upload', upload.single('file'), (req, res) => {
+router.post('/upload', requireAuth, upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
   res.json({ url: req.file.path });
 });
@@ -865,6 +865,12 @@ router.post('/:id/register', requireAuth, async (req, res) => {
     }
 
     if (!event) return res.status(404).json({ message: 'Event not found' });
+
+    // Check if it's a paid event
+    const isPaidEvent = await PaidEventDetail.findOne({ event: event._id });
+    if (isPaidEvent) {
+      return res.status(403).json({ message: 'This is a paid event. Please complete the payment to register.' });
+    }
 
     // Check if event registration is expired
     const now = new Date();

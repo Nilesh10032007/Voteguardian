@@ -4,10 +4,18 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { resend } = require('../utils/email');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const { requireAuth, syncAdminRole } = require('../middleware/auth');
 const Club = require('../models/Club');
 const { upload } = require('../config/cloudinary');
+
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: { message: 'Too many OTP requests from this IP, please try again after 15 minutes' }
+});
 
 function userResponse(user) {
   return {
@@ -31,7 +39,7 @@ function userResponse(user) {
   };
 }
 
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const generateOTP = () => crypto.randomInt(100000, 999999).toString();
 
 // Security and Data Type Validation Helper
 function validateUserData({ name, email, age, phone }) {
@@ -175,14 +183,14 @@ router.post('/verify-otp', async (req, res) => {
 });
 
 // Route: Setup Profile (Initial)
-router.post('/setup-profile', async (req, res) => {
+router.post('/setup-profile', requireAuth, async (req, res) => {
   console.log('DEBUG: Setup Profile Request Body:', req.body);
-  const { userId, name, bio, avatar, phone, age, gender, interests, hobbies, favEvents, education } = req.body;
+  const { name, bio, avatar, phone, age, gender, interests, hobbies, favEvents, education } = req.body;
+  
+  // SECURE: Use the authenticated user's ID, ignore any userId passed in the body
+  const userId = req.user._id;
+
   try {
-    if (!userId) {
-      console.error('DEBUG: userId is missing in request');
-      return res.status(400).json({ message: 'User ID is missing' });
-    }
     const user = await User.findById(userId);
     if (!user) {
       console.error('DEBUG: User not found for ID:', userId);
@@ -394,7 +402,8 @@ router.patch('/change-password', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/forgot-password-send-otp', async (req, res) => {
+// Route: Send OTP for Forgot Password
+router.post('/forgot-password-send-otp', otpLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email is required' });
@@ -415,15 +424,10 @@ router.post('/forgot-password-send-otp', async (req, res) => {
         return res.status(400).json({ message: 'Unable to send OTP: Recovery email not found. Please add a Recovery Email in your Initiative Profile first.' });
       }
       targetEmail = club.presidentEmail.trim();
-      const [name, domain] = targetEmail.split('@');
-      maskedEmail = `${name.substring(0, 2)}***@${domain}`;
-    } else {
-      const [name, domain] = targetEmail.split('@');
-      maskedEmail = `${name.substring(0, 2)}***@${domain}`;
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
     dbUser.otp = otp;
     dbUser.otpExpires = otpExpires;
@@ -432,20 +436,36 @@ router.post('/forgot-password-send-otp', async (req, res) => {
     const mailOptions = {
       from: `Eventum <support@theeventum.com>`,
       to: targetEmail,
-      subject: 'Password Reset Code - Eventum',
-      text: `Your OTP to reset your password is: ${otp}. It expires in 10 minutes.`,
+      subject: 'Your OTP for Password Reset',
       html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0a0a0a; padding: 40px 20px; color: #ffffff;">
-        <div style="max-width: 450px; margin: 0 auto; background-color: #151515; border-radius: 12px; padding: 30px; border: 1px solid #2a2a2a; border-top: 3px solid #dc2626;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <h2 style="color: #ffffff; font-size: 22px; margin: 0 0 8px 0;">Reset Your Password</h2>
-            <p style="color: #a0a0a0; font-size: 14px; margin: 0;">Enter this verification code in Eventum to set a new password.</p>
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #0a0a0a;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #ffffff; font-size: 32px; margin: 0; font-weight: 700; letter-spacing: 1px;">
+            Eventum <span style="color: #a855f7;">✨</span>
+          </h1>
+        </div>
+        
+        <div style="max-width: 450px; margin: 0 auto; background-color: #151515; border-radius: 12px; padding: 40px 30px; border: 1px solid #2a2a2a; border-top: 3px solid #a855f7;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <div style="font-size: 28px; margin-bottom: 15px;">🔐</div>
+            <h2 style="font-size: 22px; margin: 0 0 12px 0; color: #ffffff; font-weight: 600;">Reset Password</h2>
+            <p style="color: #a0a0a0; font-size: 14px; margin: 0; line-height: 1.5;">Enter this code to reset your Eventum password.</p>
           </div>
-          <div style="background-color: #1c1c1c; border: 1px solid #333333; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">
-            <p style="color: #666666; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 10px 0; font-weight: 700;">Password Reset Code</p>
-            <h1 style="color: #dc2626; font-size: 36px; letter-spacing: 6px; margin: 0; font-weight: 700;">${otp}</h1>
+
+          <div style="background-color: #1c1c1c; border: 1px solid #333333; border-radius: 8px; padding: 25px; text-align: center; margin-bottom: 25px;">
+            <p style="color: #666666; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 15px 0; font-weight: 700;">Reset Code</p>
+            <h1 style="color: #a855f7; font-size: 36px; letter-spacing: 6px; margin: 0; font-weight: 700; text-shadow: 0 0 10px rgba(168, 85, 247, 0.2);">${otp}</h1>
           </div>
-          <p style="color: #777777; font-size: 12px; text-align: center; margin: 0;">Code expires in <span style="color: #dc2626; font-weight: 600;">10 minutes</span></p>
+
+          <div style="text-align: center;">
+            <p style="color: #777777; font-size: 12px; margin: 0;">
+              Code expires in <span style="color: #a855f7; font-weight: 600;">10 minutes</span>
+            </p>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+          <p style="color: #444444; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Eventum. Connect. Discover.</p>
         </div>
       </div>
       `
@@ -453,17 +473,25 @@ router.post('/forgot-password-send-otp', async (req, res) => {
 
     try {
       await resend.emails.send(mailOptions);
-    } catch (e) {
-      console.error('Failed to send resend email:', e);
+      // mask email
+      const parts = targetEmail.split('@');
+      if (parts.length === 2) {
+        maskedEmail = parts[0].substring(0, 3) + '***@' + parts[1];
+      } else {
+        maskedEmail = targetEmail;
+      }
+      res.status(200).json({ message: 'OTP sent successfully', email: maskedEmail });
+    } catch (err) {
+      console.error('Resend Error:', err);
+      res.status(500).json({ message: 'Failed to send OTP email' });
     }
-
-    res.status(200).json({ message: `OTP sent successfully`, email: maskedEmail });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-router.post('/forgot-password-verify-otp', async (req, res) => {
+// Route: Verify OTP for Forgot Password
+router.post('/forgot-password-verify-otp', otpLimiter, async (req, res) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) return res.status(400).json({ valid: false, message: 'Email and OTP are required' });
@@ -481,7 +509,8 @@ router.post('/forgot-password-verify-otp', async (req, res) => {
   }
 });
 
-router.post('/reset-password-otp', async (req, res) => {
+// Route: Reset Password with OTP
+router.post('/reset-password-otp', otpLimiter, async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
     if (!email || !otp || !newPassword || newPassword.length < 6) {
@@ -516,7 +545,7 @@ router.delete('/account', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/resend-otp', async (req, res) => {
+router.post('/resend-otp', otpLimiter, async (req, res) => {
   const { email } = req.body;
   try {
     const user = await User.findOne({ email });
@@ -527,7 +556,7 @@ router.post('/resend-otp', async (req, res) => {
       return res.status(400).json({ message: 'User already verified' });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOTP();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
     user.otp = otp;
@@ -571,7 +600,7 @@ router.post('/resend-otp', async (req, res) => {
   }
 });
 
-router.post('/upload-avatar', upload.single('avatar'), (req, res) => {
+router.post('/upload-avatar', requireAuth, upload.single('avatar'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'Please upload an image' });
   }
