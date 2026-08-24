@@ -190,7 +190,6 @@ router.post('/verify-otp', async (req, res) => {
 
 // Route: Setup Profile (Initial)
 router.post('/setup-profile', requireAuth, async (req, res) => {
-  console.log('DEBUG: Setup Profile Request Body:', req.body);
   const { name, bio, avatar, phone, age, gender, interests, hobbies, favEvents, education } = req.body;
   
   // SECURE: Use the authenticated user's ID, ignore any userId passed in the body
@@ -238,7 +237,6 @@ router.post('/setup-profile', requireAuth, async (req, res) => {
 
 // Route: Update Profile (Editing)
 router.put('/update-profile', async (req, res) => {
-  console.log('DEBUG: Update Profile Request Body:', req.body);
   const { userId, name, bio, avatar, phone, age, gender, interests, hobbies, favEvents, education } = req.body;
   try {
     const user = await User.findById(userId);
