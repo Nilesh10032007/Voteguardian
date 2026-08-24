@@ -27,7 +27,9 @@ const Navbar: React.FC = () => {
 
   const handleDismissNotification = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = [...dismissedNotifications, id];
+    const sanitizedId = String(id).replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedId) return;
+    const updated = [...dismissedNotifications, sanitizedId];
     setDismissedNotifications(updated);
     localStorage.setItem('dismissed_notifications', JSON.stringify(updated));
   };
@@ -97,6 +99,9 @@ const Navbar: React.FC = () => {
   // User requested landing page navbar styling globally across the entire website
   const isInnerPage = false;
 
+  const [isScrolled, setIsScrolled] = useState(false);
+  const avatarFallback = `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`;
+  const getAvatar = () => (user?.avatar && user.avatar !== 'undefined') ? user.avatar : avatarFallback;
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -303,7 +308,7 @@ const Navbar: React.FC = () => {
                   whileHover={{ scale: 1.05 }}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', background: 'rgba(0,0,0,0.04)', padding: '4px 8px 4px 4px', borderRadius: '999px', border: '1px solid rgba(0,0,0,0.06)' }}
                 >
-                  <img src={user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'} alt="Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                  <img src={getAvatar()} alt="Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.src = avatarFallback; }} />
                   <ChevronDown size={14} color="#888" />
                 </motion.div>
 
@@ -433,7 +438,7 @@ const Navbar: React.FC = () => {
             {isMobileMenuOpen ? (
               <X size={24} />
             ) : isLoggedIn ? (
-              <img src={user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'} alt="Avatar" style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${isInnerPage ? 'rgba(255,255,255,0.8)' : '#8B5CF6'}` }} />
+              <img src={getAvatar()} alt="Avatar" style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${isInnerPage ? 'rgba(255,255,255,0.8)' : '#8B5CF6'}` }} onError={(e) => { e.currentTarget.src = avatarFallback; }} />
             ) : (
               <Menu size={24} />
             )}
@@ -476,7 +481,7 @@ const Navbar: React.FC = () => {
             {/* Logged in User Profile Header */}
             {isLoggedIn && (
                <div style={{ padding: '0.25rem 0.5rem 1.25rem', borderBottom: `1px solid ${isInnerPage ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'}`, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                 <img src={user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'} alt="Avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${isInnerPage ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)'}` }} />
+                 <img src={getAvatar()} alt="Avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: `2px solid ${isInnerPage ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)'}` }} onError={(e) => { e.currentTarget.src = avatarFallback; }} />
                  <div style={{ overflow: 'hidden' }}>
                    <div style={{ fontWeight: 800, fontSize: '1.05rem', color: isInnerPage ? '#fff' : '#111', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{user?.name || 'User'}</div>
                    <div style={{ fontSize: '0.8rem', color: isInnerPage ? '#aaa' : '#777', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{user?.email || ''}</div>
