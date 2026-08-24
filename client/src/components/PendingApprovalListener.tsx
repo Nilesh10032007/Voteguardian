@@ -25,10 +25,9 @@ export default function PendingApprovalListener() {
     const tick = async () => {
       const id = sessionStorage.getItem(STORAGE_KEY);
       if (!id || cancelled) return;
+      if (!/^[a-f0-9]{24}$/i.test(id)) return; // Valid ObjectId format
       try {
-        const sanitizedId = String(id).replace(/[^a-zA-Z0-9]/g, '');
-        if (!sanitizedId) return;
-        const { data } = await api.get<{ status: string; title?: string }>(`/events/submission/${sanitizedId}`);
+        const { data } = await api.get<{ status: string; title?: string }>(`/events/submission/${id}`);
         if (data.status === 'approved') {
           clearPendingSubmissionId();
           if (!cancelled) setApprovedTitle(data.title || 'Your event');

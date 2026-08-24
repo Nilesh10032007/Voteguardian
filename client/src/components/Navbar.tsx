@@ -27,9 +27,8 @@ const Navbar: React.FC = () => {
 
   const handleDismissNotification = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const sanitizedId = String(id).replace(/[^a-zA-Z0-9_-]/g, '');
-    if (!sanitizedId) return;
-    const updated = [...dismissedNotifications, sanitizedId];
+    if (!id || typeof id !== 'string' || !/^[a-f0-9]{24}$/i.test(id)) return;
+    const updated = [...dismissedNotifications, id];
     setDismissedNotifications(updated);
     localStorage.setItem('dismissed_notifications', JSON.stringify(updated));
   };
@@ -99,7 +98,6 @@ const Navbar: React.FC = () => {
   // User requested landing page navbar styling globally across the entire website
   const isInnerPage = false;
 
-  const [isScrolled, setIsScrolled] = useState(false);
   const avatarFallback = `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`;
   const getAvatar = () => (user?.avatar && user.avatar !== 'undefined') ? user.avatar : avatarFallback;
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
