@@ -399,11 +399,9 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
                     <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem', flexGrow: 1 }}>
                       <MapPin size={14} /> {event.venue || event.location || 'TBA'}
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 600 }}>
-                      <span style={{ color: '#475569' }}>{event.capacity || event.seats || '69'} Seats left</span>
-                      <span style={{ color: '#cbd5e1' }}>|</span>
-                      <span style={{ color: '#ef4444' }}>{event.pricing?.isPaid ? `₹${event.pricing.ticketPrice}` : (event.price || 'Free')}</span>
-                    </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', fontWeight: 600 }}>
+                        <span style={{ color: '#475569' }}>Limited Seats left</span>
+                      </div>
                   </div>
                 </div>
               ))}
