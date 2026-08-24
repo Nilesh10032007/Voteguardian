@@ -485,6 +485,11 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                         return;
                       }
 
+                      if (currentEvent.title && currentEvent.title.toLowerCase().includes('nss intake')) {
+                        window.open('https://forms.gle/jH4jKnuJMQ8NyNx99', '_blank');
+                        return;
+                      }
+
                       if (currentEvent.title && (currentEvent.title.toLowerCase().includes('fresher') || currentEvent.title.toLowerCase().includes('mrfresher'))) {
                         window.open('https://docs.google.com/forms/d/e/1FAIpQLSdH54mUtkKk6UtzSc_6aHAzM4Kom0RJn4DvAhBwcLJYjHQykQ/viewform', '_blank');
                         return;
