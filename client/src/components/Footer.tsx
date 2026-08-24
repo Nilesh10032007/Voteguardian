@@ -79,9 +79,9 @@ const Footer = () => (
           {
             label: 'Legal',
             links: [
-              { name: 'Privacy Policy', href: '#' },
-              { name: 'Terms of Use',   href: '#' },
-              { name: 'Cookie Policy',  href: '#' },
+              { name: 'Privacy Policy', href: '#privacy-policy' },
+              { name: 'Terms of Use',   href: '#terms-of-use' },
+              { name: 'Cookie Policy',  href: '#cookie-policy' },
             ],
           },
         ].map(col => (
@@ -92,17 +92,19 @@ const Footer = () => (
                 key={l.name} 
                 href={l.href} 
                 onClick={(e) => {
-                  const currentHash = window.location.hash || '#home';
-                  const targetHash = l.href === '#' ? '#home' : l.href;
+                  const currentHash = window.location.hash || '';
+                  const targetHash = l.href;
                   
-                  // If clicking the exact same page they are already on, scroll to top
                   if (currentHash === targetHash) {
                     e.preventDefault();
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                  } else if (['#about', '#contact', '#privacy-policy', '#terms-of-use', '#cookie-policy'].includes(targetHash)) {
+                    // Force a hard redirect as requested for these text-heavy pages to guarantee they load perfectly
+                    e.preventDefault();
+                    window.location.assign('/' + targetHash);
+                    window.location.reload();
                   } else {
-                    // Let the native hash change navigate to the new page.
-                    // React (App.tsx) will detect the hash change and render the correct page component (Gallery, Clubs, etc.)
-                    // We don't need to prevent default.
+                    // Let the native hash change navigate to the new page (Clubs, Gallery, etc.)
                   }
                 }}
                 className="lp-footer-link"

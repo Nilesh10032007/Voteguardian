@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Lenis from '@studio-freight/lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -29,6 +29,9 @@ import Clubs          from './pages/Clubs';
 import Home2          from './pages/Home2';
 import ClubDetail     from './pages/ClubDetail';
 import EventDetail    from './pages/EventDetail';
+import PrivacyPolicy  from './pages/PrivacyPolicy';
+import TermsOfUse     from './pages/TermsOfUse';
+import CookiePolicy   from './pages/CookiePolicy';
 
 import CreateEvent    from './pages/CreateEvent';
 import EditProfile    from './pages/EditProfile';
@@ -157,31 +160,57 @@ function AppContent() {
     }
   }, [currentRoute, isLoggedIn, loading, user]);
 
+  const innerPages = [
+    '#events','#discover','#clubs','#signin','#create-event',
+    '#settings','#edit-profile','#your-events','#registered-events',
+    '#favourites','#admin',
+    '#about', '#contact', '#privacy-policy', '#terms-of-use', '#cookie-policy'
+  ];
+  const isInner = innerPages.includes(currentRoute)
+    || currentRoute.startsWith('#club-detail')
+    || currentRoute.startsWith('#event-detail')
+    || currentRoute.startsWith('#edit-event');
+
+  const lenisRef = useRef<any>(null);
+
   /* ── Lenis smooth scroll (landing only) ── */
   useEffect(() => {
-    const innerPages = [
-      '#events','#discover','#clubs','#signin','#create-event',
-      '#settings','#edit-profile','#your-events','#registered-events',
-      '#favourites','#admin',
-    ];
-    const isInner = innerPages.includes(currentRoute)
-      || currentRoute.startsWith('#club-detail')
-      || currentRoute.startsWith('#event-detail')
-      || currentRoute.startsWith('#edit-event');
-
     if (isInner) return;
 
     const lenis = new Lenis({ duration: 1.2, smoothWheel: true, wheelMultiplier: 0.9, touchMultiplier: 1.8 });
-    
-    // Crucial: Lenis reads the browser scroll position on mount. We MUST force it to 0.
+    lenisRef.current = lenis;
     lenis.scrollTo(0, { immediate: true });
 
-    let raf: number;
-    const tick = (t: number) => { lenis.raf(t); raf = requestAnimationFrame(tick); };
-    raf = requestAnimationFrame(tick);
+    lenis.on('scroll', ScrollTrigger.update);
 
-    return () => { lenis.destroy(); cancelAnimationFrame(raf); };
-  }, [currentRoute, isLoggedIn]);
+    const gsapTicker = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+    
+    gsap.ticker.add(gsapTicker);
+    gsap.ticker.lagSmoothing(0, 0);
+
+    return () => { 
+      lenis.destroy(); 
+      lenisRef.current = null;
+      gsap.ticker.remove(gsapTicker);
+    };
+  }, [isInner]); // ONLY re-run when isInner changes!
+
+  // Force scroll to top and ScrollTrigger refresh on EVERY route change
+  useEffect(() => {
+    // Force scroll to top so we don't end up out-of-bounds on short pages
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo(0, 0);
+    }
+
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [currentRoute]);
 
   /* ── Render ── */
   const renderContent = () => {
@@ -270,7 +299,6 @@ function AppContent() {
     if (currentRoute === '#contact') {
       return (
         <div className="landing-page">
-          <Navbar />
           <Contact />
           <Footer />
         </div>
@@ -280,12 +308,30 @@ function AppContent() {
     if (currentRoute === '#about') {
       return (
         <div className="landing-page">
-          <Navbar />
           <About />
           <Footer />
         </div>
       );
     }
+
+    if (currentRoute === '#privacy-policy') return (
+      <div className="landing-page">
+        <PrivacyPolicy />
+        <Footer />
+      </div>
+    );
+    if (currentRoute === '#terms-of-use') return (
+      <div className="landing-page">
+        <TermsOfUse />
+        <Footer />
+      </div>
+    );
+    if (currentRoute === '#cookie-policy') return (
+      <div className="landing-page">
+        <CookiePolicy />
+        <Footer />
+      </div>
+    );
 
     /* ── Logged-in home → Dashboard ── */
     // if (isLoggedIn && user?.role === 'user') return <Dashboard />;
