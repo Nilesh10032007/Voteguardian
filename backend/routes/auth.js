@@ -17,6 +17,12 @@ const otpLimiter = rateLimit({
   message: { message: 'Too many OTP requests from this IP, please try again after 15 minutes' }
 });
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: { message: 'Too many login/register attempts from this IP, please try again after 15 minutes' }
+});
+
 function userResponse(user) {
   return {
     id: user._id,
@@ -78,7 +84,7 @@ function validateUserData({ name, email, age, phone }) {
   return null;
 }
 
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const { name, email, password } = req.body;
 
   const valErr = validateUserData({ name, email });
@@ -91,7 +97,7 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: String(email) });
     if (user && user.isVerified) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -163,7 +169,7 @@ router.post('/register', async (req, res) => {
 router.post('/verify-otp', async (req, res) => {
   const { email, otp } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: String(email) });
     if (!user || user.otp !== otp || user.otpExpires < Date.now()) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
@@ -270,10 +276,10 @@ router.put('/update-profile', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: String(email) });
     if (!user) return res.status(404).json({ message: 'User not found. Please create an account first.' });
 
     if (!user.isVerified) return res.status(401).json({ message: 'Email not verified. Please register again.' });
@@ -408,7 +414,7 @@ router.post('/forgot-password-send-otp', otpLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email is required' });
 
-    const dbUser = await User.findOne({ email });
+    const dbUser = await User.findOne({ email: String(email) });
     if (!dbUser) return res.status(404).json({ message: 'User not found' });
 
     if (dbUser.authProvider === 'google') {
@@ -496,7 +502,7 @@ router.post('/forgot-password-verify-otp', otpLimiter, async (req, res) => {
     const { email, otp } = req.body;
     if (!email || !otp) return res.status(400).json({ valid: false, message: 'Email and OTP are required' });
 
-    const dbUser = await User.findOne({ email });
+    const dbUser = await User.findOne({ email: String(email) });
     if (!dbUser) return res.status(404).json({ valid: false, message: 'User not found' });
 
     if (dbUser.otp === otp && dbUser.otpExpires && dbUser.otpExpires > new Date()) {
@@ -517,7 +523,7 @@ router.post('/reset-password-otp', otpLimiter, async (req, res) => {
       return res.status(400).json({ message: 'Valid OTP and new password (min 6 chars) are required' });
     }
 
-    const dbUser = await User.findOne({ email });
+    const dbUser = await User.findOne({ email: String(email) });
     if (!dbUser) return res.status(404).json({ message: 'User not found' });
 
     if (dbUser.otp !== otp || !dbUser.otpExpires || dbUser.otpExpires <= new Date()) {
@@ -548,7 +554,7 @@ router.delete('/account', requireAuth, async (req, res) => {
 router.post('/resend-otp', otpLimiter, async (req, res) => {
   const { email } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: String(email) });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

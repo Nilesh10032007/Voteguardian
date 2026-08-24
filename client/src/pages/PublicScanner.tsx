@@ -13,7 +13,7 @@ export default function PublicScanner({ token }: { token: string }) {
   useEffect(() => {
     let savedId = localStorage.getItem('scannerDeviceId');
     if (!savedId) {
-      savedId = 'dev_' + Math.random().toString(36).substring(2, 15);
+      savedId = 'dev_' + crypto.randomUUID();
       localStorage.setItem('scannerDeviceId', savedId);
     }
     setDeviceId(savedId);

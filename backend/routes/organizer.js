@@ -123,7 +123,8 @@ router.post('/request-password-change', requireAuth, requireOrganizer, async (re
     }
 
     const user = await User.findById(req.user.id);
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const crypto = require('crypto');
+    const otp = crypto.randomInt(100000, 999999).toString();
     user.otp = otp;
     user.otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
     await user.save();

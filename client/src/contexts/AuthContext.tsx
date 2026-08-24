@@ -128,9 +128,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithToken = async (newToken: string) => {
-    setToken(newToken);
-    localStorage.setItem('token', newToken);
-    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    const sanitizedToken = String(newToken).replace(/[^a-zA-Z0-9._-]/g, '');
+    setToken(sanitizedToken);
+    localStorage.setItem('token', sanitizedToken);
+    api.defaults.headers.common['Authorization'] = `Bearer ${sanitizedToken}`;
     try {
       const { data } = await api.get<User>('/auth/me');
       setUser({ ...data, id: String(data.id) });

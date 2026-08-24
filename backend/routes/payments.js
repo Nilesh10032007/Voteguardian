@@ -33,7 +33,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
     const existingRegistration = await PaidRegistration.findOne({
       user: req.user._id,
-      event: eventId,
+      event: String(eventId),
       status: 'completed'
     });
 
@@ -73,7 +73,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
     }
 
     // 2. Get Event Pricing Details
-    const pricing = await PaidEventDetail.findOne({ event: eventId });
+    const pricing = await PaidEventDetail.findOne({ event: String(eventId) });
     if (!pricing) {
         return res.status(404).json({ message: 'Pricing details not found for this event' });
     }
@@ -174,7 +174,7 @@ router.post('/verify-payment', requireAuth, async (req, res) => {
 
     // 2. Update Registration Status
     const registration = await PaidRegistration.findOne({
-      razorpayOrderId: razorpay_order_id,
+      razorpayOrderId: String(razorpay_order_id),
       user: req.user._id
     });
 

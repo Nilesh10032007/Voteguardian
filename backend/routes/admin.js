@@ -325,7 +325,7 @@ router.post('/clubs', protect, admin, upload.any(), async (req, res) => {
 
     // Check if email is already taken
     if (organizerEmail && organizerPassword) {
-      const existingUser = await User.findOne({ email: organizerEmail });
+      const existingUser = await User.findOne({ email: String(organizerEmail) });
       if (existingUser) {
         return res.status(400).json({ message: 'A user with this organizer email already exists.' });
       }
@@ -453,7 +453,7 @@ router.put('/clubs/:id', protect, admin, upload.any(), async (req, res) => {
         }
       } else if (organizerEmail && organizerPassword) {
         // Create new user if not exist
-        const existingUser = await User.findOne({ email: organizerEmail });
+        const existingUser = await User.findOne({ email: String(organizerEmail) });
         if (!existingUser) {
           const organizerUser = new User({
             name: `${name} Organizer`,
