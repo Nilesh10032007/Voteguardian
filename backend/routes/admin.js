@@ -126,6 +126,7 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
       if (category !== undefined) event.category = category;
       if (req.file) {
         event.imageUrl = req.file.path;
+        event.image = req.file.path;
       }
     } else {
       if (organizer !== undefined) event.organizer = organizer;

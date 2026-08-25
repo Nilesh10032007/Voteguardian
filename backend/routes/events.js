@@ -184,8 +184,13 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
     
     if (req.file) {
       s.imageUrl = req.file.path;
+      s.image = req.file.path;
     } else if (imageUrl !== undefined) {
       s.imageUrl = imageUrl;
+      s.image = imageUrl;
+    } else if (req.body.image !== undefined) {
+      s.imageUrl = req.body.image;
+      s.image = req.body.image;
     }
 
     if (participantType !== undefined) s.participantType = participantType;
