@@ -33,6 +33,14 @@ const DEPARTMENTS = [
 
 function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
   const [poster, setPoster] = useState<string | null>(event?.image || event?.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80');
+  const [selectedPosterFile, setSelectedPosterFile] = useState<File | null>(null);
+  const [isSavingPoster, setIsSavingPoster] = useState(false);
+
+  useEffect(() => {
+    if (!selectedPosterFile) {
+      setPoster(event?.image || event?.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80');
+    }
+  }, [event?.image, event?.imageUrl, selectedPosterFile]);
 
   const [isEditingDates, setIsEditingDates] = useState(false);
   const [startDate, setStartDate] = useState(event?.startDate ? event.startDate.split('T')[0] : '2026-06-18');
@@ -121,26 +129,55 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
               </>
             )}
 
-            <input type="file" ref={fileInputRef} onChange={async (e) => {
+            <input type="file" ref={fileInputRef} onChange={(e) => {
               if (e.target.files && e.target.files[0]) {
                 const file = e.target.files[0];
                 const url = URL.createObjectURL(file);
                 setPoster(url);
-                const formData = new FormData();
-                formData.append('image', file);
-                await saveEvent(formData);
+                setSelectedPosterFile(file);
               }
             }} style={{ display: 'none' }} accept="image/*" />
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-            <button onClick={() => fileInputRef.current?.click()} style={{ flex: 1, background: '#eaeaea', color: '#555', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
-              Change Poster
-            </button>
-            {poster && (
-              <button onClick={async () => { setPoster(null); await saveEvent({ imageUrl: null }); }} style={{ flex: 1, background: '#fee2e2', color: '#ef4444', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
-                Delete
-              </button>
+            {selectedPosterFile ? (
+              <>
+                <button 
+                  onClick={async () => {
+                    setIsSavingPoster(true);
+                    const formData = new FormData();
+                    formData.append('image', selectedPosterFile);
+                    await saveEvent(formData);
+                    setSelectedPosterFile(null);
+                    setIsSavingPoster(false);
+                  }} 
+                  disabled={isSavingPoster}
+                  style={{ flex: 1, background: '#000', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem', opacity: isSavingPoster ? 0.7 : 1 }}
+                >
+                  {isSavingPoster ? 'Saving...' : 'Save Poster'}
+                </button>
+                <button 
+                  onClick={() => {
+                    setPoster(event?.image || event?.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80');
+                    setSelectedPosterFile(null);
+                  }} 
+                  disabled={isSavingPoster}
+                  style={{ flex: 1, background: '#eaeaea', color: '#555', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => fileInputRef.current?.click()} style={{ flex: 1, background: '#eaeaea', color: '#555', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+                  Change Poster
+                </button>
+                {poster && (
+                  <button onClick={async () => { setPoster(null); await saveEvent({ imageUrl: null, image: null }); }} style={{ flex: 1, background: '#fee2e2', color: '#ef4444', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+                    Delete
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1620,12 +1657,14 @@ export default function ManageEvent() {
     try {
       try {
         const res = await api.put(`/events/submission/${eventData._id || eventData.id}`, updates);
-        setEventData((prev: any) => ({ ...prev, ...res.data.submission }));
+        const updated = res.data?.submission || res.data;
+        setEventData((prev: any) => ({ ...prev, ...updated }));
         return true;
       } catch (err: any) {
         if (err.response?.status === 403 || err.response?.status === 404) {
           const res = await api.put(`/admin/events/${eventData._id || eventData.id}`, updates);
-          setEventData((prev: any) => ({ ...prev, ...res.data }));
+          const updated = res.data?.submission || res.data;
+          setEventData((prev: any) => ({ ...prev, ...updated }));
           return true;
         }
         throw err;
