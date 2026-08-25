@@ -480,6 +480,11 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                         }
                       }
 
+                      if (currentEvent.title && (currentEvent.title.toLowerCase().includes('cohort') || currentEvent.title.toLowerCase().includes('incubation'))) {
+                        window.open('https://jecrcincubation.com/cohort-8', '_blank', 'noopener,noreferrer');
+                        return;
+                      }
+
                       if (currentEvent.title && currentEvent.title.toLowerCase().includes('caravan')) {
                         window.location.href = 'https://pages.razorpay.com/clubcaravan2026';
                         return;
