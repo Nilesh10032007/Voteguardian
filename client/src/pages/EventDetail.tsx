@@ -495,6 +495,11 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                         return;
                       }
 
+                      if (currentEvent.title && currentEvent.title.toLowerCase().includes('genesis')) {
+                        window.open('https://mshportal.meity.gov.in/ext/form/23966/1/apply?source=JECRC%20Incubation%20Centre&medium=post-JECRC', '_blank', 'noopener,noreferrer');
+                        return;
+                      }
+
                       if (currentEvent.title && (currentEvent.title.toLowerCase().includes('fresher') || currentEvent.title.toLowerCase().includes('mrfresher'))) {
                         window.open('https://docs.google.com/forms/d/e/1FAIpQLSdH54mUtkKk6UtzSc_6aHAzM4Kom0RJn4DvAhBwcLJYjHQykQ/viewform', '_blank', 'noopener,noreferrer');
                         return;
