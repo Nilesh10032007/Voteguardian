@@ -500,6 +500,11 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                         return;
                       }
 
+                      if (currentEvent.title && currentEvent.title.toLowerCase().includes('sustainability innovation')) {
+                        window.open('https://forms.gle/8PncqNHEg5RdMWxo8', '_blank', 'noopener,noreferrer');
+                        return;
+                      }
+
                       if (currentEvent.title && (currentEvent.title.toLowerCase().includes('fresher') || currentEvent.title.toLowerCase().includes('mrfresher'))) {
                         window.open('https://docs.google.com/forms/d/e/1FAIpQLSdH54mUtkKk6UtzSc_6aHAzM4Kom0RJn4DvAhBwcLJYjHQykQ/viewform', '_blank', 'noopener,noreferrer');
                         return;
