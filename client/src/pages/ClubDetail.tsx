@@ -1,3 +1,4 @@
+import { optimizeImage } from '../utils/optimizeImage';
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, MapPin, Loader2, Mail, User, Image as ImageIcon, Trophy, X, ChevronLeft, ChevronRight, Globe } from 'lucide-react';
@@ -174,7 +175,7 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
               animate={{ opacity: 1, y: 0 }}
               style={{ borderRadius: '16px', overflow: 'hidden', width: '100%', position: 'relative', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', display: 'flex', border: '1px solid rgba(0,0,0,0.06)' }}
             >
-              <img src={club.logo} alt={club.name} style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
+              <img src={optimizeImage(club.logo)} alt={club.name} style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
             </motion.div>
 
             {/* Social Icons */}
@@ -325,7 +326,7 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', minWidth: '120px' }}>
                       <div style={{ width: '120px', height: '150px', borderRadius: '16px', background: '#f1f5f9', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 10px rgba(0,0,0,0.02)' }}>
                         {leader.photoUrl ? (
-                          <img src={leader.photoUrl} alt={leader.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={optimizeImage(leader.photoUrl)} alt={leader.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e2e8f0', color: '#94a3b8' }}>
                             <User size={48} />
