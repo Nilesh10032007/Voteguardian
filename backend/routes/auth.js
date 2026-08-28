@@ -13,13 +13,13 @@ const { upload } = require('../config/cloudinary');
 
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 10 : 100, // limit each IP per windowMs
   message: { message: 'Too many OTP requests from this IP, please try again after 15 minutes' }
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit each IP to 10 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 20 : 200, // limit each IP per windowMs
   message: { message: 'Too many login/register attempts from this IP, please try again after 15 minutes' }
 });
 
