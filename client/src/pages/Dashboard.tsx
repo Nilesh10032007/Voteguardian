@@ -330,7 +330,16 @@ const Dashboard: React.FC = () => {
                       {event.isMine && <span style={{ marginLeft: 8, fontSize: '0.7rem', padding: '2px 6px', background: '#8B5CF6', color: '#fff', borderRadius: 4 }}>Created by You</span>}
                     </h3>
                     <div style={{ display: 'flex', gap: '1rem', opacity: 0.5, fontSize: '0.85rem' }}>
-                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Calendar size={14} /> {event.date || event.startDate}</span>
+                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Calendar size={14} /> {(() => {
+  const d = event.date || event.startDate;
+  if (!d || d === 'TBA') return 'TBA';
+  if (d.includes(' - ')) {
+    const parts = d.split(' - ').map((p: string) => p.split('T')[0]);
+    if (parts[0] === parts[1]) return parts[0];
+    return parts.join(' to ');
+  }
+  return d.split('T').join(' \u2022 ');
+})()}</span>
                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><MapPin size={14} /> {event.venue || event.location}</span>
                     </div>
                   </div>

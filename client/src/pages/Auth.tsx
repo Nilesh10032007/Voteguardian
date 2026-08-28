@@ -586,13 +586,10 @@ const Auth: React.FC = () => {
                       <Loader2 className="spin" size={20} color="#7c3aed" />
                     </div>
                   )}
-                  <label style={{ position: 'absolute', bottom: -5, right: -5, background: '#7c3aed', padding: '6px', borderRadius: '50%', border: '2px solid #fff', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Plus size={14} />
-                    <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} disabled={isUploading} />
-                  </label>
+                  {/* Custom upload disabled temporarily */}
                 </div>
               </div>
-              <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Choose an AI Avatar or upload your photo</p>
+              <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.5rem 0', fontWeight: 600 }}>Choose an AI Avatar</p>
               <div className="avatar-grid-responsive">
                 {[
                   'https://api.dicebear.com/7.x/lorelei/svg?seed=Alexander',
