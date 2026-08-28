@@ -88,7 +88,7 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
     const { 
       title, description, organizer, date, venue, category, price, seats, tag, startDate, endDate, mode, location, capacity,
       participantType, teamMin, teamMax, eligibility, timeline, rules, contacts, announcements, customQuestions,
-      tickets, prizes, visibility, registrationControl, personalInfo, eduInfo, organizingTeam, generateQRCode
+      tickets, prizes, visibility, registrationControl, personalInfo, eduInfo, organizingTeam, generateQRCode, registrationStatus
     } = req.body;
 
     if (title !== undefined) event.title = title;
@@ -107,6 +107,7 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
     if (prizes !== undefined) event.prizes = prizes;
     if (visibility !== undefined) event.visibility = visibility;
     if (registrationControl !== undefined) event.registrationControl = registrationControl;
+    if (registrationStatus !== undefined) event.registrationStatus = registrationStatus;
     if (personalInfo !== undefined) event.personalInfo = personalInfo;
     if (eduInfo !== undefined) event.eduInfo = eduInfo;
     if (organizingTeam !== undefined) event.organizingTeam = organizingTeam;
