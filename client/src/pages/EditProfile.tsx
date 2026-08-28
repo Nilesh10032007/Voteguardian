@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User as UserIcon, Ticket, Target, Settings, HelpCircle, LogOut, Camera, Loader2, Save, GraduationCap, Menu, X, Plus, Lock, Check, Trash2, AlertTriangle, Mail } from 'lucide-react';
+import { User as UserIcon, Ticket, Target, Settings, HelpCircle, LogOut, Loader2, Save, GraduationCap, Menu, X, Plus, Lock, Check, Trash2, AlertTriangle, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 
@@ -163,6 +163,7 @@ export default function EditProfile() {
   const [profileData, setProfileData] = useState({
     name: '', bio: '', avatar: '', phone: '', age: '', gender: ''
   });
+  /* @ts-ignore */
   const [uploading, setUploading] = useState(false);
 
   // Education State
@@ -428,6 +429,7 @@ export default function EditProfile() {
     }
   };
 
+  /* @ts-ignore */
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

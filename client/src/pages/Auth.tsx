@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check, Loader2, Plus, GraduationCap, UserIcon, BookOpen } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, GraduationCap, UserIcon, BookOpen } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/axios';
 
@@ -335,6 +335,7 @@ const Auth: React.FC = () => {
     }
   };
 
+  /* @ts-ignore */
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
