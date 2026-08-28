@@ -726,15 +726,7 @@ export default function EditProfile() {
                   </div>
                   <div>
                     <h4 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', color: '#111' }}>Profile Picture</h4>
-                    <label style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '8px',
-                      background: '#F3E8FF', color: '#9333EA', padding: '8px 16px', borderRadius: '8px',
-                      cursor: uploading ? 'wait' : 'pointer', fontWeight: 600, fontSize: '0.9rem'
-                    }}>
-                      {uploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
-                      {uploading ? 'Uploading...' : 'Upload Custom Image'}
-                      <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} disabled={uploading} />
-                    </label>
+                    {/* Custom upload disabled temporarily */}
                   </div>
                 </div>
 

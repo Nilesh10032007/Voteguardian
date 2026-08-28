@@ -391,7 +391,16 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
                   </div>
                   <div style={{ padding: '1rem', background: '#f8fafc', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <Calendar size={14} /> {event.date || event.startDate || 'TBA'}
+                      <Calendar size={14} /> {(() => {
+  const d = event.date || event.startDate;
+  if (!d || d === 'TBA') return 'TBA';
+  if (d.includes(' - ')) {
+    const parts = d.split(' - ').map((p: string) => p.split('T')[0]);
+    if (parts[0] === parts[1]) return parts[0];
+    return parts.join(' to ');
+  }
+  return d.split('T').join(' \u2022 ');
+})()}
                     </div>
                     <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem', lineHeight: 1.3 }}>
                       {event.title}
