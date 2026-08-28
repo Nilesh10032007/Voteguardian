@@ -10,6 +10,9 @@ const User = require('./models/User');
 
 const app = express();
 
+// Trust proxy for rate limiting behind reverse proxies (Render, Vercel, Nginx, Cloudflare, etc.)
+app.set('trust proxy', 1);
+
 // Connect to Database
 connectDB().then(() => {
 
