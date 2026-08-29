@@ -429,8 +429,9 @@ const Home2 = () => {
                   </div>
                 ) : (
                   <img
-                    src={optimizeImage(event.img)}
+                    src={optimizeImage(event.img, 800)}
                     alt={event.title || 'Event'}
+                    loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
                   />
                 )}
@@ -452,7 +453,7 @@ const Home2 = () => {
             <div className="no-scrollbar" style={{ display: 'flex', gap: isMobile ? '1.25rem' : '2rem', overflowX: 'auto', padding: isMobile ? '0.5rem 1.25rem 1.5rem' : '0.5rem 2.5rem 1.5rem' }}>
               {displayedClubs.map((club, idx) => (
                 <div key={`${club.id}-${idx}`} onClick={() => window.location.hash = `#club-detail-${club.id}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', minWidth: isMobile ? '95px' : '120px', cursor: 'pointer' }}>
-                  <motion.img whileHover={{ scale: 1.05 }} src={optimizeImage(club.logo)} alt={club.name} style={{ width: isMobile ? '90px' : '120px', height: isMobile ? '90px' : '120px', borderRadius: '50%', objectFit: 'cover', background: '#e2e8f0', boxShadow: '0 8px 16px rgba(0,0,0,0.08)', flexShrink: 0 }} />
+                  <motion.img whileHover={{ scale: 1.05 }} src={optimizeImage(club.logo, 200)} alt={club.name} loading="lazy" style={{ width: isMobile ? '90px' : '120px', height: isMobile ? '90px' : '120px', borderRadius: '50%', objectFit: 'cover', background: '#e2e8f0', boxShadow: '0 8px 16px rgba(0,0,0,0.08)', flexShrink: 0 }} />
                   <span style={{ fontWeight: 600, fontSize: isMobile ? '0.82rem' : '0.95rem', textAlign: 'center', lineHeight: 1.2 }}>{club.name}</span>
                 </div>
               ))}
@@ -522,7 +523,7 @@ const Home2 = () => {
                         <motion.img
                           variants={{ initial: { scale: 1 }, hover: { scale: 1.05 } }}
                           transition={{ duration: 0.5, ease: 'easeOut' }}
-                          src={optimizeImage(event.img)} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          src={optimizeImage(event.img, 600)} alt={event.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       </div>
 

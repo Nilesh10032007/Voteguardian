@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { Calendar, MapPin, Star, Bell, Plus, Users, ArrowRight, Edit2, Check, X, Loader2 } from 'lucide-react';
 import { darkPageShell } from '../theme/darkShell';
 import { fallbackClubs } from '../data/clubs';
+import { optimizeImage } from '../utils/optimizeImage';
 
 const Dashboard: React.FC = () => {
   const { user, updateProfile } = useAuth();
@@ -322,7 +323,7 @@ const Dashboard: React.FC = () => {
                   }}
                 >
                   <div style={{ width: '80px', height: '80px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
-                    <img src={event.image || event.imageUrl || '/event1.png'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={optimizeImage(event.image || event.imageUrl, 200) || '/event1.png'} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.4rem' }}>
@@ -384,7 +385,7 @@ const Dashboard: React.FC = () => {
                   }}
                 >
                   <div style={{ width: '80px', height: '80px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border-color)' }}>
-                    <img src={club.logo} alt={club.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={optimizeImage(club.logo, 200)} alt={club.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>

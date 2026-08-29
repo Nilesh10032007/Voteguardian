@@ -14,7 +14,9 @@ const storage = new CloudinaryStorage({
     return {
       folder: 'find-my-event',
       resource_type: 'auto',
-      transformation: [{ width: 1200, height: 1200, crop: 'limit' }]
+      transformation: [
+        { width: 1000, height: 1000, crop: 'limit', quality: 'auto:good', fetch_format: 'auto' }
+      ]
     };
   }
 });
