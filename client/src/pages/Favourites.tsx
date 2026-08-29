@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLikedEvents } from '../hooks/useLikedEvents';
 import { darkPageShell } from '../theme/darkShell';
+import { optimizeImage } from '../utils/optimizeImage';
 
 export default function Favourites() {
   const { user } = useAuth();
@@ -96,7 +97,7 @@ export default function Favourites() {
                   onClick={() => { window.location.hash = '#events'; }} // Ideally open details view, but #events is fine for now
                 >
                   <div style={{ width: '100%', height: '160px', borderRadius: '12px', overflow: 'hidden', marginBottom: '1rem', position: 'relative' }}>
-                    <img src={event.image} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={optimizeImage(event.image, 600)} alt={event.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <button 
                         onClick={(e) => { e.stopPropagation(); toggleLike(String(event.id)); }} 
                         style={{

@@ -9,6 +9,7 @@ import {
 import api from '../api/axios';
 import TicketScanner from '../components/TicketScanner';
 import { useAuth } from '../contexts/AuthContext';
+import { optimizeImage } from '../utils/optimizeImage';
 
 const toast = {
   success: (msg: string) => alert(msg),
@@ -635,7 +636,7 @@ const AdminDashboard: React.FC = () => {
                   className="admin-item-row"
                   style={{ background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: '20px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '2rem', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}
                 >
-                  <img src={event.image} alt="" style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'cover' }} />
+                  <img src={optimizeImage(event.image, 200)} alt="" loading="lazy" style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'cover' }} />
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#111' }}>{event.title}</h3>
                     <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '4px' }}>{event.venue} • {new Date(event.date).toLocaleDateString()}</p>
@@ -836,7 +837,7 @@ const AdminDashboard: React.FC = () => {
                     className="admin-item-row"
                     style={{ background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: '20px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '2rem', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}
                   >
-                    <img src={club.logo} alt="" style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'cover' }} />
+                    <img src={optimizeImage(club.logo, 200)} alt="" loading="lazy" style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'cover' }} />
                     <div style={{ flex: 1 }}>
                       <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#111' }}>{club.name}</h3>
                       <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '4px' }}>{club.type} • {club.id}</p>

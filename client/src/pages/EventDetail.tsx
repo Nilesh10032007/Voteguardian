@@ -225,7 +225,7 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                 animate={{ opacity: 1, y: 0 }}
                 style={{ background: 'transparent', borderRadius: '16px', overflow: 'hidden', height: 'auto', position: 'relative', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
               >
-                <img src={optimizeImage(currentEvent.img)} alt={currentEvent.title} style={{ width: '100%', height: 'auto', objectFit: 'cover', position: 'relative', zIndex: 1, display: 'block' }} />
+                <img src={optimizeImage(currentEvent.img, 1000)} alt={currentEvent.title} loading="lazy" style={{ width: '100%', height: 'auto', objectFit: 'cover', position: 'relative', zIndex: 1, display: 'block' }} />
               </motion.div>
 
               {/* Eligibility Card */}

@@ -4,6 +4,7 @@ import { Loader2, MapPin, QrCode, X, Calendar } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import { optimizeImage } from '../utils/optimizeImage';
 
 export default function RegisteredEvents() {
   const [registeredEvents, setRegisteredEvents] = useState<any[]>([]);
@@ -362,8 +363,9 @@ export default function RegisteredEvents() {
                         flexShrink: 0
                       }}>
                         <img 
-                          src={ev.image || ev.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2000&auto=format&fit=crop'} 
+                          src={optimizeImage(ev.image || ev.imageUrl, 600) || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2000&auto=format&fit=crop'} 
                           alt={ev.title}
+                          loading="lazy"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       </div>

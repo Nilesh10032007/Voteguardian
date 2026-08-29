@@ -175,7 +175,7 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
               animate={{ opacity: 1, y: 0 }}
               style={{ borderRadius: '16px', overflow: 'hidden', width: '100%', position: 'relative', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', display: 'flex', border: '1px solid rgba(0,0,0,0.06)' }}
             >
-              <img src={optimizeImage(club.logo)} alt={club.name} style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
+              <img src={optimizeImage(club.logo, 500)} alt={club.name} loading="lazy" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
             </motion.div>
 
             {/* Social Icons */}
@@ -326,7 +326,7 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', minWidth: '120px' }}>
                       <div style={{ width: '120px', height: '150px', borderRadius: '16px', background: '#f1f5f9', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 10px rgba(0,0,0,0.02)' }}>
                         {leader.photoUrl ? (
-                          <img src={optimizeImage(leader.photoUrl)} alt={leader.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={optimizeImage(leader.photoUrl, 300)} alt={leader.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e2e8f0', color: '#94a3b8' }}>
                             <User size={48} />
@@ -354,8 +354,9 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
               {club.glimpses.map((img, idx) => (
                 <img 
                   key={idx} 
-                  src={img} 
+                  src={optimizeImage(img, 800)} 
                   alt={`Highlight ${idx}`} 
+                  loading="lazy"
                   onClick={() => setSelectedImageIndex(idx)}
                   style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
                   onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
@@ -388,7 +389,7 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
                   style={{ background: '#111', borderRadius: '16px', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', cursor: 'pointer' }}
                 >
                   <div style={{ height: '280px', width: '100%', background: '#000', position: 'relative' }}>
-                    <img src={event.image || event.imageUrl || '/event1.png'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={optimizeImage(event.image || event.imageUrl, 600) || '/event1.png'} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                   <div style={{ padding: '1rem', background: '#f8fafc', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
