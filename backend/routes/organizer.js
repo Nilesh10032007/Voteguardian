@@ -3,7 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const Club = require('../models/Club');
 const User = require('../models/User');
-const { upload } = require('../config/cloudinary');
+const { upload, uploadBufferToR2 } = require('../config/r2');
 const { clearClubsCache } = require('./clubs');
 const bcrypt = require('bcryptjs');
 const { resend } = require('../utils/email');
@@ -101,17 +101,16 @@ router.put('/club-profile', requireAuth, requireOrganizer, async (req, res) => {
 
 // POST /api/organizer/upload
 // Uploads a single file and returns the secure URL
-router.post('/upload', requireAuth, requireOrganizer, (req, res) => {
-  upload.single('file')(req, res, (err) => {
-    if (err) {
-      console.error('Cloudinary upload error:', err);
-      return res.status(500).json({ message: err.message || 'Image upload failed' });
-    }
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
-    res.status(200).json({ url: req.file.path });
-  });
+router.post('/upload', requireAuth, requireOrganizer, upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  try {
+    const url = await uploadBufferToR2(req.file.buffer, 'organizers');
+    res.status(200).json({ url });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Image upload failed' });
+  }
 });
 
 // POST /api/organizer/request-password-change
@@ -217,6 +216,8 @@ router.post('/events', requireAuth, requireOrganizer, upload.single('image'), as
       return res.status(400).json({ message: 'Please upload an image for the event' });
     }
 
+    const imageUrl = await uploadBufferToR2(req.file.buffer, 'events');
+
     const ClubsEvent = require('../models/ClubsEvent');
 
     const event = new ClubsEvent({
@@ -231,7 +232,7 @@ router.post('/events', requireAuth, requireOrganizer, upload.single('image'), as
       mode,
       location,
       capacity: capacity ? Number(capacity) : 0,
-      image: req.file.path,
+      image: imageUrl,
       category: category || 'General',
       price: price || 'Free',
       seats: seats || 'Limited',
