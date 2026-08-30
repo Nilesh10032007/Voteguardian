@@ -9,7 +9,7 @@ const EventSubmission = require('../models/EventSubmission');
 const ClubsEvent = require('../models/ClubsEvent');
 const { protect } = require('../middleware/authMiddleware');
 const { softAuth, requireAuth, requireAdmin } = require('../middleware/auth');
-const { upload } = require('../config/cloudinary');
+const { upload, uploadBufferToR2 } = require('../config/r2');
 const PaidEventDetail = require('../models/PaidEventDetail');
 const ScannerLink = require('../models/ScannerLink');
 const crypto = require('crypto');
@@ -21,9 +21,14 @@ const User = require('../models/User');
 
 // @desc    Upload file for custom questions
 // @route   POST /api/events/upload
-router.post('/upload', requireAuth, upload.single('file'), (req, res) => {
+router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-  res.json({ url: req.file.path });
+  try {
+    const url = await uploadBufferToR2(req.file.buffer, 'uploads');
+    res.json({ url });
+  } catch (err) {
+    res.status(500).json({ message: 'Upload failed' });
+  }
 });
 
 let approvedCache = { data: null, timestamp: 0 };
@@ -152,7 +157,12 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
     if (!s) {
       const ClubsEvent = require('../models/ClubsEvent');
       s = await ClubsEvent.findById(req.params.id);
-      isClubsEvent = true;
+      if (s) isClubsEvent = true;
+    }
+
+    if (!s) {
+      const EventModel = require('../models/Event');
+      s = await EventModel.findById(req.params.id);
     }
 
     if (!s) return res.status(404).json({ message: 'Not found' });
@@ -183,14 +193,18 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
     if (registrationStatus !== undefined) s.registrationStatus = registrationStatus;
     
     if (req.file) {
-      s.imageUrl = req.file.path;
-      s.image = req.file.path;
-    } else if (imageUrl !== undefined) {
+      const uploadedUrl = await uploadBufferToR2(req.file.buffer, 'events');
+      s.imageUrl = uploadedUrl;
+      s.image = uploadedUrl;
+    } else if (imageUrl) {
       s.imageUrl = imageUrl;
       s.image = imageUrl;
-    } else if (req.body.image !== undefined) {
+    } else if (req.body.image) {
       s.imageUrl = req.body.image;
       s.image = req.body.image;
+    } else if (req.body.img) {
+      s.imageUrl = req.body.img;
+      s.image = req.body.img;
     }
 
     if (participantType !== undefined) s.participantType = participantType;
@@ -358,7 +372,8 @@ router.post('/', requireAuth, upload.single('image'), async (req, res) => {
     }
 
     // Determine the final image URL (from upload or fallback)
-    const finalImageUrl = req.file ? req.file.path : (imageUrl || '');
+    const uploadedUrl = req.file ? await uploadBufferToR2(req.file.buffer, 'events') : '';
+    const finalImageUrl = uploadedUrl || (imageUrl || '');
 
     const submission = await EventSubmission.create({
       organizer: req.user._id,

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, admin } = require('../middleware/authMiddleware');
-const { upload } = require('../config/cloudinary');
+const { upload, uploadBufferToR2 } = require('../config/r2');
 const User = require('../models/User');
 const Event = require('../models/Event');
 const EventSubmission = require('../models/EventSubmission');
@@ -30,6 +30,8 @@ router.post('/events', protect, admin, upload.single('image'), async (req, res) 
       return res.status(400).json({ message: 'Please upload an image for the event' });
     }
 
+    const imageUrl = await uploadBufferToR2(req.file.buffer, 'events');
+
     const event = new Event({
       title,
       description,
@@ -41,7 +43,7 @@ router.post('/events', protect, admin, upload.single('image'), async (req, res) 
       mode,
       location,
       capacity: capacity ? Number(capacity) : 0,
-      image: req.file.path,
+      image: imageUrl,
       category,
       price,
       seats,
@@ -127,8 +129,15 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
       event.capacity = capacity !== undefined ? Number(capacity) : (seats !== undefined ? Number(seats) : event.capacity);
       if (category !== undefined) event.category = category;
       if (req.file) {
-        event.imageUrl = req.file.path;
-        event.image = req.file.path;
+        const uploadedUrl = await uploadBufferToR2(req.file.buffer, 'events');
+        event.imageUrl = uploadedUrl;
+        event.image = uploadedUrl;
+      } else if (req.body.image) {
+        event.imageUrl = req.body.image;
+        event.image = req.body.image;
+      } else if (req.body.imageUrl) {
+        event.imageUrl = req.body.imageUrl;
+        event.image = req.body.imageUrl;
       }
     } else {
       if (organizer !== undefined) event.organizer = organizer;
@@ -144,7 +153,15 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
       if (seats !== undefined) event.seats = seats;
       if (tag !== undefined) event.tag = tag;
       if (req.file) {
-        event.image = req.file.path;
+        const uploadedUrl = await uploadBufferToR2(req.file.buffer, 'events');
+        event.image = uploadedUrl;
+        event.imageUrl = uploadedUrl;
+      } else if (req.body.image) {
+        event.image = req.body.image;
+        event.imageUrl = req.body.image;
+      } else if (req.body.imageUrl) {
+        event.image = req.body.imageUrl;
+        event.imageUrl = req.body.imageUrl;
       }
     }
 
@@ -309,20 +326,20 @@ router.post('/clubs', protect, admin, upload.any(), async (req, res) => {
   try {
     const { name, type, description, aboutUs, tags, foundedOn, venue, eventsConducted, detailedDescription, organizerEmail, organizerPassword } = req.body;
     
-    let logoFile = null;
+    let logoUrl = null;
     let teamPhotos = {};
     if (req.files && Array.isArray(req.files)) {
-      req.files.forEach(file => {
+      for (const file of req.files) {
         if (file.fieldname === 'logo') {
-          logoFile = file;
+          logoUrl = await uploadBufferToR2(file.buffer, 'clubs');
         } else if (file.fieldname.startsWith('teamPhoto_')) {
           const index = file.fieldname.split('_')[1];
-          teamPhotos[index] = file.path;
+          teamPhotos[index] = await uploadBufferToR2(file.buffer, 'leadership');
         }
-      });
+      }
     }
 
-    if (!logoFile) {
+    if (!logoUrl) {
       return res.status(400).json({ message: 'Please upload a logo for the club' });
     }
 
@@ -359,7 +376,7 @@ router.post('/clubs', protect, admin, upload.any(), async (req, res) => {
       eventsConducted: eventsConducted || '0',
       detailedDescription,
       leadership,
-      logo: logoFile.path,
+      logo: logoUrl,
       tags: tags ? tags.split(',').map(tag => tag.trim()) : []
     });
 
@@ -396,17 +413,17 @@ router.put('/clubs/:id', protect, admin, upload.any(), async (req, res) => {
 
     const { name, type, description, aboutUs, tags, foundedOn, venue, eventsConducted, detailedDescription, organizerEmail, organizerPassword } = req.body;
     
-    let logoFile = null;
+    let logoUrl = null;
     let teamPhotos = {};
     if (req.files && Array.isArray(req.files)) {
-      req.files.forEach(file => {
+      for (const file of req.files) {
         if (file.fieldname === 'logo') {
-          logoFile = file;
+          logoUrl = await uploadBufferToR2(file.buffer, 'clubs');
         } else if (file.fieldname.startsWith('teamPhoto_')) {
           const index = file.fieldname.split('_')[1];
-          teamPhotos[index] = file.path;
+          teamPhotos[index] = await uploadBufferToR2(file.buffer, 'leadership');
         }
-      });
+      }
     }
 
     club.name = name || club.name;
@@ -425,8 +442,8 @@ router.put('/clubs/:id', protect, admin, upload.any(), async (req, res) => {
       club.tags = tags.split(',').map(tag => tag.trim());
     }
 
-    if (logoFile) {
-      club.logo = logoFile.path;
+    if (logoUrl) {
+      club.logo = logoUrl;
     }
 
     if (req.body.leadership) {

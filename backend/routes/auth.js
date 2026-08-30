@@ -9,7 +9,7 @@ const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const { requireAuth, syncAdminRole } = require('../middleware/auth');
 const Club = require('../models/Club');
-const { upload } = require('../config/cloudinary');
+const { upload, uploadBufferToR2 } = require('../config/r2');
 
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -609,11 +609,16 @@ router.post('/resend-otp', otpLimiter, async (req, res) => {
   }
 });
 
-router.post('/upload-avatar', requireAuth, upload.single('avatar'), (req, res) => {
+router.post('/upload-avatar', requireAuth, upload.single('avatar'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'Please upload an image' });
   }
-  res.json({ url: req.file.path });
+  try {
+    const url = await uploadBufferToR2(req.file.buffer, 'avatars');
+    res.json({ url });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to upload image' });
+  }
 });
 
 module.exports = router;
