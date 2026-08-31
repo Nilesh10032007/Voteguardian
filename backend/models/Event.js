@@ -34,6 +34,7 @@ const eventSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  externalRegistrationLink: { type: String, default: '' },
   location: {
     type: String,
     default: ''

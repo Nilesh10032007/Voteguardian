@@ -667,6 +667,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
   const [partType, setPartType] = useState(event?.participantType === 'team' ? 'Team' : 'Individual');
   const [teamMin, setTeamMin] = useState(event?.teamMin?.toString() || '1');
   const [teamMax, setTeamMax] = useState(event?.teamMax?.toString() || '4');
+  const [externalLink, setExternalLink] = useState(event?.externalRegistrationLink || '');
   const [regWindow, setRegWindow] = useState(event?.registrationStatus || 'Open');
 
   const [tickets, setTickets] = useState<any[]>(event?.tickets?.length > 0 ? event.tickets : [{ id: 1, category: 'General Pass', price: 'Free' }]);
@@ -872,6 +873,13 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
             </div>
           </div>
 
+                    <div style={{ background: '#fff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #eaeaea', marginTop: '1rem', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: '#111' }}>External Registration Link</h3>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#666' }}>Redirect users to an external form (e.g. Google Form, Razorpay)</p>
+            <input type="url" value={externalLink} onChange={e => setExternalLink(e.target.value)} placeholder="https://..." style={{ width: '100%', padding: '10px', fontSize: '0.9rem', borderRadius: '8px', border: '1px solid #ccc', outline: 'none', marginBottom: '1rem' }} />
+            
+          </div>
+
           {/* Custom Questions */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', fontWeight: 700, color: '#111', marginBottom: '1rem' }}>
@@ -962,7 +970,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem', borderTop: '1px solid #eaeaea', paddingTop: '1.5rem' }}>
         <button onClick={async () => {
-          const updatePayload: any = { participantType: partType === 'Team' ? 'team' : 'individual', registrationStatus: regWindow };
+          const updatePayload: any = { participantType: partType === 'Team' ? 'team' : 'individual', registrationStatus: regWindow, externalRegistrationLink: externalLink };
           if (partType === 'Team') {
             updatePayload.teamMin = parseInt(teamMin) || 1;
             updatePayload.teamMax = parseInt(teamMax) || 4;
