@@ -24,7 +24,7 @@ router.get('/users', protect, admin, async (req, res) => {
 // @route   POST /api/admin/events
 router.post('/events', protect, admin, upload.single('image'), async (req, res) => {
   try {
-    const { title, description, organizer, date, venue, category, price, seats, tag, startDate, endDate, mode, location, capacity } = req.body;
+    const { title, description, organizer, date, venue, category, price, seats, tag, startDate, endDate, mode, location, capacity, participantType, teamMin, teamMax, generateQRCode, externalRegistrationLink } = req.body;
     
     if (!req.file) {
       return res.status(400).json({ message: 'Please upload an image for the event' });
@@ -90,7 +90,7 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
     const { 
       title, description, organizer, date, venue, category, price, seats, tag, startDate, endDate, mode, location, capacity,
       participantType, teamMin, teamMax, eligibility, timeline, rules, contacts, announcements, customQuestions,
-      tickets, prizes, visibility, registrationControl, personalInfo, eduInfo, organizingTeam, generateQRCode, registrationStatus, registrationDeadline
+      tickets, prizes, visibility, registrationControl, personalInfo, eduInfo, organizingTeam, generateQRCode, registrationStatus, registrationDeadline, externalRegistrationLink
     } = req.body;
 
     if (title !== undefined) event.title = title;
@@ -111,6 +111,7 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
     if (registrationControl !== undefined) event.registrationControl = registrationControl;
     if (registrationStatus !== undefined) event.registrationStatus = registrationStatus;
     if (registrationDeadline !== undefined) event.registrationDeadline = registrationDeadline;
+    if (externalRegistrationLink !== undefined) event.externalRegistrationLink = externalRegistrationLink;
     if (personalInfo !== undefined) event.personalInfo = personalInfo;
     if (eduInfo !== undefined) event.eduInfo = eduInfo;
     if (organizingTeam !== undefined) event.organizingTeam = organizingTeam;

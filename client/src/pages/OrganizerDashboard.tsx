@@ -92,6 +92,7 @@ export default function OrganizerDashboard() {
   const [customCategory, setCustomCategory] = useState('');
   const [description, setDescription] = useState('');
   const [instructions, setInstructions] = useState('');
+  const [externalRegistrationLink, setExternalRegistrationLink] = useState('');
 
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -187,6 +188,7 @@ export default function OrganizerDashboard() {
     formData.append('price', ticketType === 'Paid' ? ticketPrice : 'Free');
     formData.append('seats', maxTickets ? maxTickets : 'Limited');
     formData.append('generateQRCode', String(generateQRCode));
+      formData.append('externalRegistrationLink', externalRegistrationLink.trim());
     formData.append('targetDepartment', targetDepartment);
     formData.append('rules', instructions);
     formData.append('image', imageFile);
@@ -1139,7 +1141,14 @@ export default function OrganizerDashboard() {
                   }}
                 />
 
-                {/* Ticket Price */}
+                              {/* External Registration Link */}
+              <div style={{ background: '#eaeaea', borderRadius: '12px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#555' }}>External Registration Link (Optional)</div>
+                <input type="url" placeholder="e.g., Google Form, Razorpay link" value={externalRegistrationLink} onChange={e => setExternalRegistrationLink(e.target.value)} style={{ width: '100%', background: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, outline: 'none' }} />
+                <div style={{ fontSize: '0.75rem', color: '#666' }}>If provided, users will be redirected here instead of the built-in registration form.</div>
+              </div>
+
+              {/* Ticket Price */}
                 <div style={{ background: '#eaeaea', borderRadius: '12px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Ticket size={20} color="#888" />

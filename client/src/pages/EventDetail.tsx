@@ -481,6 +481,11 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                         return;
                       }
 
+                      if (rawEvent?.externalRegistrationLink) {
+                        window.open(rawEvent.externalRegistrationLink, '_blank', 'noopener,noreferrer');
+                        return;
+                      }
+
                       if (currentEvent.title && currentEvent.title.toLowerCase().includes('caravan')) {
                         window.location.href = 'https://pages.razorpay.com/clubcaravan2026';
                         return;
