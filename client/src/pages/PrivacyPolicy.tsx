@@ -51,15 +51,20 @@ const PrivacyPolicy: React.FC = () => {
         Organizers are required to use this data solely for the purpose of managing the event and are prohibited from sharing it with third parties.
       </p>
 
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '2.5rem', marginBottom: '1rem' }}>4. Data Security</h2>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '2.5rem', marginBottom: '1rem' }}>4. Third-Party Services & Payment Processing</h2>
+      <p style={{ marginBottom: '1.5rem' }}>
+        When you initiate a payment for an event, we utilize Razorpay as our third-party payment processor. The Razorpay SDK is loaded only on payment pages and may collect device information (such as browser type, operating system, and IP address) strictly for payment security, fraud prevention, and processing your transaction. We do not store your payment credentials on our servers.
+      </p>
+
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '2.5rem', marginBottom: '1rem' }}>5. Data Security</h2>
       <p style={{ marginBottom: '1.5rem' }}>
         We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorised way, altered or disclosed.
         We authenticate users securely (e.g., via Google OAuth) and do not store raw passwords on our servers.
       </p>
 
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '2.5rem', marginBottom: '1rem' }}>5. Your Legal Rights</h2>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '2.5rem', marginBottom: '1rem' }}>6. Your Legal Rights</h2>
       <p style={{ marginBottom: '1.5rem' }}>
-        Under certain circumstances, you have rights under data protection laws in relation to your personal data, including the right to request access, correction, or erasure of your personal data. 
+        Under certain circumstances, you have rights under data protection laws in relation to your personal data, including the right to request access, correction, deletion (including third-party fingerprints), or erasure of your personal data. 
         To exercise these rights, please contact us through the platform.
       </p>
 
