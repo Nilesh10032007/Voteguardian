@@ -22,8 +22,6 @@ import {
 import PendingApprovalListener from './components/PendingApprovalListener';
 
 /* ── Pages ── */
-import Events         from './pages/Events';
-import Discover       from './pages/Discover';
 import Auth           from './pages/Auth';
 import Clubs          from './pages/Clubs';
 import Home2          from './pages/Home2';
@@ -33,12 +31,9 @@ import PrivacyPolicy  from './pages/PrivacyPolicy';
 import TermsOfUse     from './pages/TermsOfUse';
 import CookiePolicy   from './pages/CookiePolicy';
 
-import CreateEvent    from './pages/CreateEvent';
 import EditProfile    from './pages/EditProfile';
 import ManageEvent    from './pages/ManageEvent';
-import YourEvents     from './pages/YourEvents';
 import RegisteredEvents from './pages/RegisteredEvents';
-import Favourites     from './pages/Favourites';
 import Gallery        from './pages/Gallery';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCreateEvent from './pages/AdminCreateEvent';
@@ -127,8 +122,8 @@ function AppContent() {
     }
 
     const protected_ = [
-      '#create-event', '#settings', '#edit-profile', '#admin', 
-      '#your-events', '#registered-events', '#organizer-dashboard', '#edit-event', '#organizer-setup'
+      '#settings', '#edit-profile', '#admin', 
+      '#registered-events', '#organizer-dashboard', '#edit-event', '#organizer-setup'
     ];
     
     const isProtected = protected_.some(prefix => currentRoute.startsWith(prefix));
@@ -161,9 +156,9 @@ function AppContent() {
   }, [currentRoute, isLoggedIn, loading, user]);
 
   const innerPages = [
-    '#events','#discover','#clubs','#signin','#create-event',
-    '#settings','#edit-profile','#your-events','#registered-events',
-    '#favourites','#admin',
+    '#clubs','#signin',
+    '#settings','#edit-profile','#registered-events',
+    '#admin',
     '#about', '#contact', '#privacy-policy', '#terms-of-use', '#cookie-policy'
   ];
   const isInner = innerPages.includes(currentRoute)
@@ -215,15 +210,11 @@ function AppContent() {
   /* ── Render ── */
   const renderContent = () => {
     if (currentRoute === '#home')            return <Home2 />;
-    if (currentRoute === '#events')           return <Events isLoggedIn={isLoggedIn} />;
-    if (currentRoute === '#discover')         return <Discover />;
     if (currentRoute === '#clubs')            return <Clubs />;
     if (currentRoute.startsWith('#club-detail')) return <ClubDetail hash={currentRoute} />;
     if (currentRoute.startsWith('#event-detail')) return <EventDetail hash={currentRoute} />;
     if (currentRoute === '#signin')           return <Auth />;
-    if (currentRoute === '#your-events')      return <YourEvents />;
     if (currentRoute === '#registered-events') return <RegisteredEvents />;
-    if (currentRoute === '#favourites')       return <Favourites />;
     if (currentRoute === '#gallery')          return <Gallery />;
     if (currentRoute === '#organizer-setup') {
       if (!isLoggedIn) return null;
@@ -242,10 +233,6 @@ function AppContent() {
       return <OrganizerDashboard />;
     }
 
-    if (currentRoute === '#create-event') {
-      if (!isLoggedIn) return null;
-      return <CreateEvent />;
-    }
     const cleanRoute = decodeURIComponent(currentRoute || '');
 
     if (
