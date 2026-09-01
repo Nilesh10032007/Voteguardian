@@ -193,7 +193,7 @@ const GallerySection = () => {
         >
           <button
             className="lp-btn-primary"
-            onClick={() => { window.location.hash = '#events'; }}
+            onClick={() => { window.location.hash = '#home'; }}
           >
             Explore All Events →
           </button>

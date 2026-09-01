@@ -219,7 +219,7 @@ const Hero = () => {
       {/* ── CTA Button ── */}
       <div ref={moreRef} style={{ position: 'relative', zIndex: 1, marginTop: '2.5rem' }}>
         <button
-          onClick={() => { window.location.hash = '#events'; }}
+          onClick={() => { window.location.hash = '#home'; }}
           style={{
             background: '#000',
             color: '#fff',

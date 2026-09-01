@@ -91,7 +91,7 @@ export default function PendingApprovalListener() {
             </p>
             <button
               type="button"
-              onClick={() => { setApprovedTitle(null); window.location.hash = '#discover'; }}
+              onClick={() => { setApprovedTitle(null); window.location.hash = '#home'; }}
               style={{
                 width: '100%', background: 'linear-gradient(135deg, #34d399, #059669)',
                 color: '#052e16', border: 'none', padding: '0.95rem', borderRadius: 14, fontWeight: 800, cursor: 'pointer',

@@ -1093,7 +1093,7 @@ const CtaSection = () => {
             Start Exploring →
           </button>
           <button className="lp-btn-secondary"
-            onClick={() => { window.location.hash = '#discover'; }}>
+            onClick={() => { window.location.hash = '#home'; }}>
             View All Events
           </button>
         </motion.div>
