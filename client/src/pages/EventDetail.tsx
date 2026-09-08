@@ -1,7 +1,7 @@
 import { optimizeImage } from '../utils/optimizeImage';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { MapPin, Users, Edit, Loader2, Trophy, Phone, FileText, ChevronRight, GraduationCap, ChevronUp, User, Mail, Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MapPin, Users, Edit, Loader2, Trophy, Phone, FileText, ChevronRight, GraduationCap, ChevronUp, User, Mail, Bell, Image as ImageIcon, Download, X } from 'lucide-react';
 import Footer from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/axios';
@@ -18,6 +18,7 @@ const EventDetail = ({ hash }: { hash?: string }) => {
   const [loading, setLoading] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -615,6 +616,39 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                 </div>
               )}
 
+              {/* Additional Docs */}
+              {(rawEvent?.additionalDocs && rawEvent.additionalDocs.length > 0) && (
+                <div className="order-5-half" style={{ marginBottom: '2.5rem' }}>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '1.5rem', color: '#0f172a' }}>Additional Documents</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {rawEvent.additionalDocs.map((doc: any, i: number) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#fff', borderRadius: '12px', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: doc.type?.includes('pdf') ? '#fee2e2' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {doc.type?.includes('pdf') ? <FileText size={20} color="#ef4444" /> : <ImageIcon size={20} color="#3b82f6" />}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b' }}>{doc.name}</div>
+                            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{doc.type?.includes('pdf') ? 'PDF Document' : 'Image'}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {doc.type?.includes('pdf') ? (
+                            <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ padding: '8px', background: '#f8fafc', borderRadius: '6px', color: '#475569', display: 'flex', alignItems: 'center' }}>
+                              <Download size={18} />
+                            </a>
+                          ) : (
+                            <button onClick={() => setSelectedImage(doc.url)} style={{ padding: '8px', background: '#f8fafc', borderRadius: '6px', color: '#475569', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                              <ImageIcon size={18} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Prizes and Rewards */}
               {(rawEvent?.prizes && rawEvent.prizes.length > 0) && (
                 <div className="order-6" style={{ marginBottom: '2.5rem' }}>
@@ -648,6 +682,24 @@ const EventDetail = ({ hash }: { hash?: string }) => {
       )}
 
       <Footer />
+
+      {/* Image Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedImage(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}
+          >
+            <button onClick={() => setSelectedImage(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+              <X size={24} />
+            </button>
+            <img src={selectedImage} alt="Enlarged Document" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px' }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

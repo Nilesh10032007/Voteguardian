@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
-import { LayoutGrid, Plus, Bell, Search, Image as ImageIcon, MapPin, ChevronDown, CheckCircle, Users, Trophy, Edit2, Check, Trash2, Download, Link as LinkIcon, Send, User, Mail, Phone, Calendar, X, Menu } from 'lucide-react';
+import { LayoutGrid, Plus, Bell, Search, Image as ImageIcon, MapPin, ChevronDown, CheckCircle, Users, Trophy, Edit2, Check, Trash2, Download, Link as LinkIcon, Send, User, Mail, Phone, Calendar, X, Menu, FileText } from 'lucide-react';
 import darkLogo from '../logo/dark logo.png';
 import Footer from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -74,6 +74,8 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
   const [timeline, setTimeline] = useState<any[]>(event?.timeline?.length > 0 ? event.timeline : []);
   const [showAddTimeline, setShowAddTimeline] = useState(false);
   const [newTimeline, setNewTimeline] = useState({ title: '', desc: '', start: '', end: '' });
+
+  const [additionalDocs, setAdditionalDocs] = useState<any[]>(event?.additionalDocs?.length > 0 ? event.additionalDocs : []);
 
   const [isEditingRules, setIsEditingRules] = useState(false);
   const [rules, setRules] = useState(event?.rules || '');
@@ -506,6 +508,70 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Additional Docs Card */}
+      <div className="card-container">
+        <div className="card-header">
+          <h3 className="card-title">Custom Itinerary & Additional Docs</h3>
+          <button className="add-btn" onClick={() => document.getElementById('file-upload')?.click()}>
+            <Plus size={14} /> Upload File
+          </button>
+          <input 
+            type="file" 
+            id="file-upload" 
+            style={{ display: 'none' }} 
+            accept=".pdf, image/*" 
+            onChange={async (e) => {
+              if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                try {
+                  const res = await api.post('/events/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                  });
+                  const newDoc = {
+                    name: res.data.name || file.name,
+                    url: res.data.url,
+                    type: res.data.type || file.type
+                  };
+                  const updated = [...additionalDocs, newDoc];
+                  setAdditionalDocs(updated);
+                  await saveEvent({ additionalDocs: updated });
+                } catch (err) {
+                  console.error('Upload failed', err);
+                  alert('Upload failed');
+                }
+              }
+            }} 
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+          {additionalDocs.map((doc, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#fafafa', borderRadius: '8px', border: '1px solid #eaeaea' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {doc.type?.includes('pdf') ? <FileText size={20} color="#ef4444" /> : <ImageIcon size={20} color="#3b82f6" />}
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#111' }}>{doc.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#666' }}>{doc.type?.includes('pdf') ? 'PDF Document' : 'Image'}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ color: '#111' }}><Download size={16} /></a>
+                <Trash2 size={16} color="#ef4444" style={{ cursor: 'pointer' }} onClick={async () => {
+                  const updated = additionalDocs.filter((_, idx) => idx !== i);
+                  setAdditionalDocs(updated);
+                  await saveEvent({ additionalDocs: updated });
+                }} />
+              </div>
+            </div>
+          ))}
+          {additionalDocs.length === 0 && (
+             <div style={{ color: '#888', fontSize: '0.9rem', padding: '1rem 0' }}>No additional documents uploaded.</div>
+          )}
         </div>
       </div>
 
