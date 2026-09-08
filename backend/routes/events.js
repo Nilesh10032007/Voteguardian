@@ -24,8 +24,8 @@ const User = require('../models/User');
 router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
   try {
-    const url = await uploadBufferToR2(req.file.buffer, 'uploads');
-    res.json({ url });
+    const url = await uploadBufferToR2(req.file.buffer, 'uploads', null, req.file.mimetype, req.file.originalname);
+    res.json({ url, type: req.file.mimetype, name: req.file.originalname });
   } catch (err) {
     res.status(500).json({ message: 'Upload failed' });
   }
@@ -178,7 +178,7 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
 
     const {
       title, description, startDate, endDate, mode, location, capacity, imageUrl,
-      participantType, teamMin, teamMax, eligibility, timeline, rules, contacts, announcements, customQuestions,
+      participantType, teamMin, teamMax, eligibility, timeline, additionalDocs, rules, contacts, announcements, customQuestions,
       tickets, prizes, visibility, registrationControl, personalInfo, eduInfo, organizingTeam, registrationDeadline,
       generateQRCode, targetDepartment, registrationStatus, externalRegistrationLink
     } = req.body;
@@ -212,6 +212,7 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
     if (teamMax !== undefined) s.teamMax = teamMax;
     if (eligibility !== undefined) s.eligibility = eligibility;
     if (timeline !== undefined) s.timeline = timeline;
+    if (additionalDocs !== undefined) s.additionalDocs = additionalDocs;
     if (rules !== undefined) s.rules = rules;
     if (contacts !== undefined) s.contacts = contacts;
     if (announcements !== undefined) s.announcements = announcements;
@@ -594,13 +595,7 @@ router.get('/verify-scanner/:token', async (req, res) => {
       return res.status(403).json({ message: "This scanner link has expired." });
     }
 
-    // Device locking check
-    if (!link.lockedDeviceId) {
-      link.lockedDeviceId = deviceId;
-      await link.save();
-    } else if (link.lockedDeviceId !== deviceId) {
-      return res.status(403).json({ message: "Link active on another device." });
-    }
+    // Device locking check removed to allow multiple devices
 
     res.json({ message: "Scanner verified successfully", link });
   } catch (error) {
@@ -626,15 +621,7 @@ router.post('/scan-public', async (req, res) => {
     return res.status(403).json({ message: "This scanner link has expired." });
   }
 
-  // 2. Device Locking Logic
-  if (!link.lockedDeviceId) {
-    // First time opening, lock it to this device
-    link.lockedDeviceId = deviceId;
-    await link.save();
-  } else if (link.lockedDeviceId !== deviceId) {
-    // It's already locked to another device!
-    return res.status(403).json({ message: "Link active on another device." });
-  }
+  // 2. Device Locking Logic removed to allow multiple devices
 
   // 3. Verify the QR Code
   let payload;

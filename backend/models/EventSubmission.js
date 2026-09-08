@@ -40,6 +40,11 @@ const eventSubmissionSchema = new mongoose.Schema(
       startDate: String,
       endDate: String
     }],
+    additionalDocs: [{
+      name: String,
+      url: String,
+      type: String
+    }],
     rules: { type: String, default: '' },
     contacts: [{
       name: String,

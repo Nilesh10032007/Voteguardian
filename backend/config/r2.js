@@ -29,21 +29,39 @@ const upload = multer({
 /**
  * Upload a buffer to Cloudflare R2 after optimizing with Sharp
  */
-async function uploadBufferToR2(buffer, folder = 'uploads', customFilename = null) {
+async function uploadBufferToR2(buffer, folder = 'uploads', customFilename = null, mimetype = null, originalname = null) {
   try {
-    let processedBuffer;
-    let extension = 'webp';
+    let processedBuffer = buffer;
+    let contentType = mimetype || 'application/octet-stream';
+    let extension = originalname ? originalname.split('.').pop() : 'bin';
 
-    // Optimize image using Sharp
-    try {
-      processedBuffer = await sharp(buffer)
-        .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 80 })
-        .toBuffer();
-    } catch (sharpErr) {
-      console.warn('Sharp optimization failed, uploading raw buffer:', sharpErr.message);
-      processedBuffer = buffer;
-      extension = 'jpg';
+    const isImage = mimetype && mimetype.startsWith('image/');
+
+    if (isImage && mimetype !== 'image/gif' && mimetype !== 'image/svg+xml') {
+      try {
+        processedBuffer = await sharp(buffer)
+          .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+        extension = 'webp';
+        contentType = 'image/webp';
+      } catch (sharpErr) {
+        console.warn('Sharp optimization failed, uploading raw buffer:', sharpErr.message);
+      }
+    } else if (!mimetype && !originalname) {
+      // Fallback for older calls without mimetype (assume image)
+      try {
+        processedBuffer = await sharp(buffer)
+          .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+        extension = 'webp';
+        contentType = 'image/webp';
+      } catch (sharpErr) {
+        console.warn('Sharp optimization failed, uploading raw buffer:', sharpErr.message);
+        extension = 'jpg';
+        contentType = 'image/jpeg';
+      }
     }
 
     const filename = customFilename || `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${extension}`;
@@ -53,7 +71,7 @@ async function uploadBufferToR2(buffer, folder = 'uploads', customFilename = nul
       Bucket: bucketName,
       Key: key,
       Body: processedBuffer,
-      ContentType: `image/${extension}`,
+      ContentType: contentType,
     });
 
     await r2Client.send(command);
