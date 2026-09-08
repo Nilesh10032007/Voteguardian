@@ -158,17 +158,19 @@ export default function OrganizerDashboard() {
 
     // Strict Validation
     if (!eventName.trim() || !category || (category === 'custom' && !customCategory.trim()) ||
-      !startDate || !startTime || !endDate || !endTime || !finalLocation || !imageFile || !regDeadlineDate || !regDeadlineTime) {
-      showError('Please fill in all required fields (including registration deadline) and upload an event poster.');
+      !startDate || !startTime || !finalLocation || !imageFile) {
+      showError('Please fill in all required fields (Event Name, Category, Start Date/Time, Location, and Poster).');
       return;
     }
 
     // Time Validation
     const startObj = parseEventDate(startDate, startTime);
-    const endObj = parseEventDate(endDate, endTime);
-    if (endObj <= startObj) {
-      showError('End time must be strictly after the Start time.');
-      return;
+    if (endDate && endTime) {
+      const endObj = parseEventDate(endDate, endTime);
+      if (endObj <= startObj) {
+        showError('End time must be strictly after the Start time.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -178,8 +180,8 @@ export default function OrganizerDashboard() {
     formData.append('description', description);
     formData.append('date', `${startDate} • ${startTime}`); // Combining to match schema
     formData.append('startDate', `${startDate}T${startTime}`);
-    formData.append('endDate', `${endDate}T${endTime}`);
-    formData.append('registrationDeadline', `${regDeadlineDate}T${regDeadlineTime}`);
+    if (endDate) formData.append('endDate', `${endDate}T${endTime || '00:00'}`);
+    if (regDeadlineDate) formData.append('registrationDeadline', `${regDeadlineDate}T${regDeadlineTime || '00:00'}`);
     // Since schema has mode and location, let's map venue/location
     formData.append('venue', finalLocation);
     formData.append('location', finalLocation);

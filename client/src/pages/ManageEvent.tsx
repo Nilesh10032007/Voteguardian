@@ -194,8 +194,8 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
               <button onClick={async () => {
                 if (isEditingDates) {
                   const fullStart = `${startDate}T${startTime}`;
-                  const fullEnd = `${endDate}T${endTime}`;
-                  const fullReg = (regDeadlineDate && regDeadlineTime) ? `${regDeadlineDate}T${regDeadlineTime}` : '';
+                  const fullEnd = endDate ? `${endDate}T${endTime || '00:00'}` : '';
+                  const fullReg = regDeadlineDate ? `${regDeadlineDate}T${regDeadlineTime || '00:00'}` : '';
                   await saveEvent({ startDate: fullStart, endDate: fullEnd, registrationDeadline: fullReg });
                 }
                 setIsEditingDates(!isEditingDates)
@@ -234,8 +234,8 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                     </div>
                   ) : (
                     <div className="mobile-form-row" style={{ display: 'flex', gap: '8px' }}>
-                      <div className="mobile-form-col" style={{ background: '#dcdcdc', padding: '6px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700, color: '#111', textAlign: 'center' }}>{endDate}</div>
-                      <div className="mobile-form-col" style={{ background: '#dcdcdc', padding: '6px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700, color: '#111', textAlign: 'center' }}>{endTime}</div>
+                      <div className="mobile-form-col" style={{ background: '#dcdcdc', padding: '6px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700, color: '#111', textAlign: 'center' }}>{endDate || 'None'}</div>
+                      <div className="mobile-form-col" style={{ background: '#dcdcdc', padding: '6px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700, color: '#111', textAlign: 'center' }}>{endTime || '--:--'}</div>
                     </div>
                   )}
                 </div>
