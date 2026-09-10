@@ -90,7 +90,7 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
   if (clubLoading) {
     return (
       <div style={{ backgroundColor: '#FAFAFA', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <Loader2 className="spin" size={40} color="#ff4d00" />
+        <Loader2 className="spin" size={40} color="#8B5CF6" />
         <style>{`.spin { animation: spin-anim 1s linear infinite; } @keyframes spin-anim { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     );
