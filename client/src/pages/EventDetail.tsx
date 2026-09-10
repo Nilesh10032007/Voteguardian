@@ -283,7 +283,7 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', marginBottom: '1rem' }}>Organized by</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '1rem', borderBottom: (rawEvent?.contacts && rawEvent.contacts.length > 0) ? '1px solid #f1f5f9' : 'none' }}>
                   {(() => {
-                    const orgImage = rawEvent?.organizer?.logo || rawEvent?.createdBy?.avatar || rawEvent?.createdBy?.logo || darkLogo;
+                    const orgImage = rawEvent?.organizerLogo || rawEvent?.organizer?.logo || rawEvent?.createdBy?.avatar || rawEvent?.createdBy?.logo || darkLogo;
                     return (
                       <img
                         src={orgImage}
