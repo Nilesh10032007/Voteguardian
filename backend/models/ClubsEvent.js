@@ -117,6 +117,7 @@ const eventSchema = new mongoose.Schema({
     default: 'Open'
   },
   registrationDeadline: { type: String, default: '' },
+  externalRegistrationLink: { type: String, default: '' },
   generateQRCode: { type: Boolean, default: false },
   registrationControl: { type: String, default: 'Require Approval' },
   personalInfo: [{

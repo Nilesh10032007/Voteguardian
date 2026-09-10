@@ -1171,8 +1171,15 @@ export default function OrganizerDashboard() {
 
                               {/* External Registration Link */}
               <div style={{ background: '#eaeaea', borderRadius: '12px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#555' }}>External Registration Link (Optional)</div>
-                <input type="url" placeholder="e.g., Google Form, Razorpay link" value={externalRegistrationLink} onChange={e => setExternalRegistrationLink(e.target.value)} style={{ width: '100%', background: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, outline: 'none' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#555' }}>External Registration Link (Optional)</div>
+                  {externalRegistrationLink ? (
+                    <button type="button" onClick={() => setExternalRegistrationLink('')} style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '4px 10px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <X size={12} /> Remove Link
+                    </button>
+                  ) : null}
+                </div>
+                <input type="url" placeholder="e.g., https://forms.gle/..." value={externalRegistrationLink} onChange={e => setExternalRegistrationLink(e.target.value)} style={{ width: '100%', background: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 600, outline: 'none' }} />
                 <div style={{ fontSize: '0.75rem', color: '#666' }}>If provided, users will be redirected here instead of the built-in registration form.</div>
               </div>
 
