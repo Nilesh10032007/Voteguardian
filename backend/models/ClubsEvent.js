@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const additionalDocSchema = new mongoose.Schema({
+  name: String,
+  url: String,
+  type: String
+}, { _id: false });
+
 const eventSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -96,11 +102,7 @@ const eventSchema = new mongoose.Schema({
     startDate: String,
     endDate: String
   }],
-  additionalDocs: [{
-    name: String,
-    url: String,
-    type: String
-  }],
+  additionalDocs: [additionalDocSchema],
   rules: { type: String, default: '' },
   contacts: [{
     name: String,
@@ -135,6 +137,7 @@ const eventSchema = new mongoose.Schema({
     default: 'Open'
   },
   registrationDeadline: { type: String, default: '' },
+  externalRegistrationLink: { type: String, default: '' },
   generateQRCode: { type: Boolean, default: false },
   registrationControl: { type: String, default: 'Require Approval' },
   personalInfo: [{

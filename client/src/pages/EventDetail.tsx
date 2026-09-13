@@ -128,7 +128,7 @@ const EventDetail = ({ hash }: { hash?: string }) => {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#FAFAFA' }}>
-        <Loader2 className="spin" size={40} color="#ff4d00" />
+        <Loader2 className="spin" size={40} color="#8B5CF6" />
         <style>{`.spin { animation: spin-anim 1s linear infinite; } @keyframes spin-anim { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -219,11 +219,12 @@ const EventDetail = ({ hash }: { hash?: string }) => {
               .order-3 { order: 3; margin-bottom: 1.5rem !important; }
               .order-4 { order: 4; margin-bottom: 1.5rem !important; }
               .order-5 { order: 5; margin-bottom: 1.5rem !important; }
-              .order-6 { order: 6; margin-bottom: 1.5rem !important; }
-              .order-7 { order: 7; margin-bottom: 1.5rem !important; }
-              .order-8 { order: 8; margin-top: 0 !important; }
-              .order-9 { order: 9; margin-top: 1rem !important; }
-              .order-10 { order: 10; margin-top: 1rem !important; }
+              .order-5-half { order: 6; margin-bottom: 1.5rem !important; }
+              .order-6 { order: 7; margin-bottom: 1.5rem !important; }
+              .order-7 { order: 8; margin-bottom: 1.5rem !important; }
+              .order-8 { order: 9; margin-top: 0 !important; }
+              .order-9 { order: 10; margin-top: 1rem !important; }
+              .order-10 { order: 11; margin-top: 1rem !important; }
             }
           `}</style>
 
@@ -283,7 +284,7 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', marginBottom: '1rem' }}>Organized by</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingBottom: '1rem', borderBottom: (rawEvent?.contacts && rawEvent.contacts.length > 0) ? '1px solid #f1f5f9' : 'none' }}>
                   {(() => {
-                    const orgImage = rawEvent?.organizer?.logo || rawEvent?.createdBy?.avatar || rawEvent?.createdBy?.logo || darkLogo;
+                    const orgImage = rawEvent?.organizerLogo || rawEvent?.organizer?.logo || rawEvent?.createdBy?.avatar || rawEvent?.createdBy?.logo || darkLogo;
                     return (
                       <img
                         src={orgImage}
