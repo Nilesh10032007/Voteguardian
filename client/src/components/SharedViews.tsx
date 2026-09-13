@@ -300,9 +300,14 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
   const [teamSize, setTeamSize] = useState(isTeam ? minTeam : 1);
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [teamMembers, setTeamMembers] = useState([{ name: user?.name || '', email: user?.email || '', phone: (user as any)?.phone || '', customAnswers: [] as any[] }]);
+  const [selectedTicket, setSelectedTicket] = useState(event.tickets?.[0]?.category || 'General');
 
-  const [currentStep, setCurrentStep] = useState(0); // For multi-step team members
-  const [selectedTicket, setSelectedTicket] = useState(event?.tickets?.[0]?.category || 'Free');
+  const [currentStep, setCurrentStep] = useState(0); // Current team member index
+  const [activeSection, setActiveSection] = useState(0); // Multi-page form step index
+
+  const isMultiPageMode = event?.formMode === 'multipage' && event?.formSections && event.formSections.length > 0;
+  const currentFormSections = isMultiPageMode ? event.formSections : [];
+  const currentSectionData = isMultiPageMode ? currentFormSections[activeSection] : null;
 
   const updateTeamSize = (size: number) => {
     let newSize = Math.max(isTeam ? minTeam : 1, Math.min(size, isTeam ? maxTeam : 1));
@@ -525,7 +530,18 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
     return { valid: true };
   };
 
-  const currentStepValidation = validateCurrentStep();
+  const validateCurrentSection = (): { valid: boolean; message?: string } => {
+    if (!isMultiPageMode || !currentSectionData) return { valid: true };
+    const m = teamMembers[currentStep];
+
+    for (let q of (currentSectionData.questions || [])) {
+      if (q.required === 'Required' || q.required === true) {
+        const answered = m.customAnswers?.find(a => a.question === q.question);
+        if (!answered || !answered.answer) return { valid: false, message: `Question "${q.question}" on ${currentSectionData.title || `Page ${activeSection + 1}`} is required` };
+      }
+    }
+    return { valid: true };
+  };
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -534,9 +550,23 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
       return;
     }
 
+    const currentStepValidation = validateCurrentStep();
     if (!currentStepValidation.valid) {
       alert(currentStepValidation.message || "Please fill all required fields for the current member.");
       return;
+    }
+
+    if (isMultiPageMode && currentFormSections.length > 0) {
+      const sectionValid = validateCurrentSection();
+      if (!sectionValid.valid) {
+        alert(sectionValid.message);
+        return;
+      }
+
+      if (activeSection < currentFormSections.length - 1) {
+        setActiveSection(prev => prev + 1);
+        return;
+      }
     }
 
     if (currentStep === teamSize - 1 && numericPrice > 0 && ticketQuantity === 0) {
@@ -546,6 +576,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
 
     if (currentStep < teamSize - 1) {
       setCurrentStep(prev => prev + 1);
+      setActiveSection(0);
       return;
     }
 
@@ -582,7 +613,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
       }
     } catch (err: any) {
       console.error('Registration error:', err);
-      const detailedError = err.response?.data?.details || err.response?.data?.message || 'Failed to process registration. Please try again.';
+      const detailedError = err.response?.data?.message || err.response?.data?.details || err.message || 'Failed to process registration. Please try again.';
       alert(detailedError);
     } finally {
       setLoading(false);
@@ -664,172 +695,384 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                 )}
 
                 <motion.div key={currentStep} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
-                  <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <h4 style={{ margin: 0, fontSize: '1.2rem', color: '#334155', fontWeight: 800, display: 'flex', justifyContent: 'space-between' }}>
-                      {isTeam ? `Member ${currentStep + 1} Details` : 'Participant Details'}
-                      {isTeam && <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#8B5CF6' }}>{currentStep + 1} of {teamSize}</span>}
-                    </h4>
+                  <div style={{ background: '#ffffff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                    {!isFieldOff('Name') && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. Full Name {isFieldRequired('Name') && '*'}</label>
-                        <input
-                          required={isFieldRequired('Name')}
-                          type="text"
-                          maxLength={60}
-                          value={currentMember.name}
-                          onChange={e => updateMember('name', e.target.value.replace(/[^a-zA-Z\s.'-]/g, ''))}
-                          placeholder="Enter full name (letters only)"
-                          style={{ width: '100%', padding: '0.85rem 1rem', background: currentMember.name ? '#ffffff' : '#F3F4F6', border: currentMember.name ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit' }}
-                        />
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Letters, spaces, dots and hyphens only (2-60 chars)</span>
-                      </div>
-                    )}
-
-                    {!isFieldOff('Mobile Number') && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. Mobile Number {isFieldRequired('Mobile Number') && '*'}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', border: currentMember.phone ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', overflow: 'hidden', background: currentMember.phone ? '#ffffff' : '#F3F4F6' }}>
-                          <span style={{ padding: '0.85rem 1rem', background: '#e2e8f0', borderRight: '1px solid #cbd5e1', color: '#334155', fontWeight: 700, fontSize: '0.9rem', userSelect: 'none' }}>
-                            +91
-                          </span>
-                          <input
-                            required={isFieldRequired('Mobile Number')}
-                            type="tel"
-                            maxLength={10}
-                            value={(() => {
-                              if (!currentMember.phone) return '';
-                              let str = String(currentMember.phone).trim();
-                              if (str.startsWith('+91')) {
-                                str = str.replace(/^\+91\s?/, '');
-                              } else if (str.startsWith('91') && str.length > 10) {
-                                str = str.replace(/^91\s?/, '');
-                              }
-                              return str.replace(/\D/g, '').slice(0, 10);
-                            })()}
-                            onChange={e => {
-                              const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
-                              updateMember('phone', digits ? `+91 ${digits}` : '');
-                            }}
-                            placeholder="Enter 10-digit mobile number"
-                            style={{ width: '100%', padding: '0.85rem 1rem', border: 'none', background: 'transparent', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit' }}
-                          />
-                        </div>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>10-digit mobile number starting with 6, 7, 8, or 9</span>
-                      </div>
-                    )}
-
-                    {!isFieldOff('Email') && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. Email Address {isFieldRequired('Email') && '*'}</label>
-                        <input required={isFieldRequired('Email')} type="email" value={currentMember.email} onChange={e => updateMember('email', e.target.value)}
-                          style={{ width: '100%', padding: '0.85rem 1rem', background: currentMember.email ? '#ffffff' : '#F3F4F6', border: currentMember.email ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit' }} />
-                      </div>
-                    )}
-
-                    {/* Educational Info */}
-                    {activeEduInfo?.filter((eInfo: any) => eInfo.required !== 'Off').map((eInfo: any, i: number) => {
-                      const val = currentMember.customAnswers?.find(a => a.question === eInfo.name)?.answer || '';
-                      const isReq = eInfo.required === 'Required';
-                      return (
-                        <div key={`edu-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                          <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {eInfo.name} {isReq && '*'}</label>
-                          <input
-                            required={isReq}
-                            type="text"
-                            value={val}
-                            onChange={e => handleMemberCustomAnswerChange(eInfo.name, e.target.value)}
-                            style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', transition: 'all 0.2s' }}
-                          />
-                        </div>
-                      );
-                    })}
-
-                    {/* Custom Questions */}
-                    {event.customQuestions?.map((q: any, i: number) => {
-                      const val = currentMember.customAnswers?.find(a => a.question === q.question)?.answer || '';
-                      const isReq = q.required === 'Required' || q.required === true;
-
-                      if (q.type === 'Dropdown') {
-                        return (
-                          <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {q.question} {isReq && '*'}</label>
-                            <select
-                              required={isReq}
-                              value={val}
-                              onChange={e => handleMemberCustomAnswerChange(q.question, e.target.value)}
-                              style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', cursor: 'pointer', appearance: 'none' }}
-                            >
-                              <option value="" disabled>Select an option</option>
-                              {q.options?.map((opt: string, idx: number) => (
-                                <option key={idx} value={opt}>{opt}</option>
-                              ))}
-                            </select>
+                    {/* Multi-Page Section Header & Questions */}
+                    {isMultiPageMode && currentSectionData ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        {/* Page Heading & Description at the very top */}
+                        <div style={{ borderBottom: '2px solid #f1f5f9', paddingBottom: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 600, color: '#111827' }}>
+                              {currentSectionData.title || `Page ${activeSection + 1}`}
+                            </h3>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', background: '#f1f5f9', padding: '4px 12px', borderRadius: '20px' }}>
+                              Page {activeSection + 1} of {currentFormSections.length}
+                            </span>
                           </div>
-                        );
-                      }
+                          {currentSectionData.description && (
+                            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.9rem', color: '#4b5563', lineHeight: 1.5, fontWeight: 400 }}>
+                              {currentSectionData.description}
+                            </p>
+                          )}
+                        </div>
 
-                      if (q.type === 'Checkbox') {
-                        const selectedOpts = Array.isArray(val) ? val : (val ? val.split(', ') : []);
-                        return (
-                          <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {q.question} {isReq && '*'}</label>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '4px' }}>
-                              {q.options?.map((opt: string, idx: number) => (
-                                <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer' }}>
+                        {/* Participant Details Heading right above Question 1 */}
+                        <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#111827', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                          {isTeam ? `Member ${currentStep + 1} Details` : 'Participant Details'}
+                          {isTeam && <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4b5563' }}>{currentStep + 1} of {teamSize}</span>}
+                        </h4>
+
+                        {/* Page 1 includes personal & edu info */}
+                        {activeSection === 0 && (
+                          <>
+                            {!isFieldOff('Name') && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. Full Name {isFieldRequired('Name') && '*'}</label>
+                                <input
+                                  required={isFieldRequired('Name')}
+                                  type="text"
+                                  maxLength={60}
+                                  value={currentMember.name}
+                                  onChange={e => updateMember('name', e.target.value.replace(/[^a-zA-Z\s.'-]/g, ''))}
+                                  placeholder="Enter full name (letters only)"
+                                  style={{ width: '100%', padding: '0.85rem 1rem', background: currentMember.name ? '#ffffff' : '#F9FAFB', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#000000', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', fontWeight: 500 }}
+                                />
+                                <span style={{ fontSize: '0.72rem', color: '#334155' }}>Letters, spaces, dots and hyphens only (2-60 chars)</span>
+                              </div>
+                            )}
+
+                            {!isFieldOff('Mobile Number') && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. Mobile Number {isFieldRequired('Mobile Number') && '*'}</label>
+                                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden', background: currentMember.phone ? '#ffffff' : '#F9FAFB' }}>
+                                  <span style={{ padding: '0.85rem 1rem', background: '#e2e8f0', borderRight: '1px solid #cbd5e1', color: '#000000', fontWeight: 700, fontSize: '0.9rem', userSelect: 'none' }}>
+                                    +91
+                                  </span>
                                   <input
-                                    type="checkbox"
-                                    checked={selectedOpts.includes(opt)}
-                                    onChange={(e) => {
-                                      let newOpts = [...selectedOpts];
-                                      if (e.target.checked) newOpts.push(opt);
-                                      else newOpts = newOpts.filter(o => o !== opt);
-                                      handleMemberCustomAnswerChange(q.question, newOpts.join(', '));
+                                    required={isFieldRequired('Mobile Number')}
+                                    type="tel"
+                                    maxLength={10}
+                                    value={(() => {
+                                      if (!currentMember.phone) return '';
+                                      let str = String(currentMember.phone).trim();
+                                      if (str.startsWith('+91')) {
+                                        str = str.replace(/^\+91\s?/, '');
+                                      } else if (str.startsWith('91') && str.length > 10) {
+                                        str = str.replace(/^91\s?/, '');
+                                      }
+                                      return str.replace(/\D/g, '').slice(0, 10);
+                                    })()}
+                                    onChange={e => {
+                                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                      updateMember('phone', digits ? `+91 ${digits}` : '');
                                     }}
-                                    style={{ width: '16px', height: '16px', accentColor: '#8B5CF6', cursor: 'pointer' }}
+                                    placeholder="Enter 10-digit mobile number"
+                                    style={{ width: '100%', padding: '0.85rem 1rem', border: 'none', background: 'transparent', color: '#000000', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', fontWeight: 500 }}
                                   />
-                                  {opt}
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      }
+                                </div>
+                                <span style={{ fontSize: '0.72rem', color: '#334155' }}>10-digit mobile number starting with 6, 7, 8, or 9</span>
+                              </div>
+                            )}
 
-                      if (q.type === 'File Upload') {
-                        return (
-                          <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {q.question} {isReq && '*'}</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                              <input
-                                type="file"
-                                accept="image/*,.pdf,.doc,.docx"
-                                onChange={e => handleFileUpload(q.question, e)}
-                                style={{ display: 'none' }}
-                                id={`file-upload-${currentStep}-${i}-${q.question.replace(/\s+/g, '-')}`}
+                            {!isFieldOff('Email') && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. Email Address {isFieldRequired('Email') && '*'}</label>
+                                <input required={isFieldRequired('Email')} type="email" value={currentMember.email} onChange={e => updateMember('email', e.target.value)}
+                                  style={{ width: '100%', padding: '0.85rem 1rem', background: currentMember.email ? '#ffffff' : '#F9FAFB', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#000000', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', fontWeight: 500 }} />
+                              </div>
+                            )}
+
+                            {/* Educational Info */}
+                            {activeEduInfo?.filter((eInfo: any) => eInfo.required !== 'Off').map((eInfo: any, i: number) => {
+                              const val = currentMember.customAnswers?.find(a => a.question === eInfo.name)?.answer || '';
+                              const isReq = eInfo.required === 'Required';
+                              return (
+                                <div key={`edu-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                  <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. {eInfo.name} {isReq && '*'}</label>
+                                  <textarea
+                                    required={isReq}
+                                    rows={1}
+                                    value={val}
+                                    onChange={e => {
+                                      handleMemberCustomAnswerChange(eInfo.name, e.target.value);
+                                      e.target.style.height = 'auto';
+                                      e.target.style.height = `${Math.max(48, e.target.scrollHeight)}px`;
+                                    }}
+                                    placeholder={`Enter ${eInfo.name.toLowerCase()}`}
+                                    style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F9FAFB', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#000000', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', fontWeight: 500, resize: 'none', overflowY: 'hidden', minHeight: '48px', boxSizing: 'border-box', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* Section-specific custom questions */}
+                        {(currentSectionData.questions || []).map((q: any, i: number) => {
+                          const val = currentMember.customAnswers?.find(a => a.question === q.question)?.answer || '';
+                          const isReq = q.required === 'Required' || q.required === true;
+
+                          if (q.type === 'Dropdown') {
+                            return (
+                              <div key={`sec-q-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. {q.question} {isReq && '*'}</label>
+                                <select
+                                  required={isReq}
+                                  value={val}
+                                  onChange={e => handleMemberCustomAnswerChange(q.question, e.target.value)}
+                                  style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F9FAFB', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#000000', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', cursor: 'pointer', fontWeight: 500 }}
+                                >
+                                  <option value="" disabled>Select an option</option>
+                                  {q.options?.map((opt: string, idx: number) => (
+                                    <option key={idx} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          }
+
+                          if (q.type === 'Checkbox') {
+                            const selectedOpts = Array.isArray(val) ? val : (val ? val.split(', ') : []);
+                            return (
+                              <div key={`sec-q-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. {q.question} {isReq && '*'}</label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '4px' }}>
+                                  {q.options?.map((opt: string, idx: number) => (
+                                    <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', cursor: 'pointer', color: '#000000', fontWeight: 500 }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedOpts.includes(opt)}
+                                        onChange={(e) => {
+                                          let newOpts = [...selectedOpts];
+                                          if (e.target.checked) newOpts.push(opt);
+                                          else newOpts = newOpts.filter(o => o !== opt);
+                                          handleMemberCustomAnswerChange(q.question, newOpts.join(', '));
+                                        }}
+                                        style={{ width: '16px', height: '16px', accentColor: '#000000', cursor: 'pointer' }}
+                                      />
+                                      {opt}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (q.type === 'File Upload') {
+                            return (
+                              <div key={`sec-q-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. {q.question} {isReq && '*'}</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                  <input
+                                    type="file"
+                                    accept="image/*,.pdf,.doc,.docx"
+                                    onChange={e => handleFileUpload(q.question, e)}
+                                    style={{ display: 'none' }}
+                                    id={`file-upload-sec-${activeSection}-${i}`}
+                                  />
+                                  <label htmlFor={`file-upload-sec-${activeSection}-${i}`} style={{ background: '#F3F4F6', color: '#000000', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, border: '1px dashed #64748b' }}>
+                                    {isUploading[q.question] ? 'Uploading...' : 'Choose File'}
+                                  </label>
+                                  {val && <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 700 }}>File Attached ✓</span>}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div key={`sec-q-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                              <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. {q.question} {isReq && '*'}</label>
+                              <textarea
+                                required={isReq}
+                                rows={2}
+                                value={val}
+                                onChange={e => {
+                                  handleMemberCustomAnswerChange(q.question, e.target.value);
+                                  e.target.style.height = 'auto';
+                                  e.target.style.height = `${Math.max(48, e.target.scrollHeight)}px`;
+                                }}
+                                placeholder="Type your answer here..."
+                                style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F9FAFB', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#000000', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', fontWeight: 500, resize: 'none', overflowY: 'hidden', minHeight: '48px', boxSizing: 'border-box', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                               />
-                              <label htmlFor={`file-upload-${currentStep}-${i}-${q.question.replace(/\s+/g, '-')}`} style={{ background: '#F3F4F6', color: '#4B5563', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, border: '1px dashed #9CA3AF' }}>
-                                {isUploading[q.question] ? 'Uploading...' : 'Choose File'}
-                              </label>
-                              {val && <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600 }}>File Attached ✓</span>}
                             </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <>
+                        {!isFieldOff('Name') && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. Full Name {isFieldRequired('Name') && '*'}</label>
+                            <input
+                              required={isFieldRequired('Name')}
+                              type="text"
+                              maxLength={60}
+                              value={currentMember.name}
+                              onChange={e => updateMember('name', e.target.value.replace(/[^a-zA-Z\s.'-]/g, ''))}
+                              placeholder="Enter full name (letters only)"
+                              style={{ width: '100%', padding: '0.85rem 1rem', background: currentMember.name ? '#ffffff' : '#F3F4F6', border: currentMember.name ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit' }}
+                            />
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Letters, spaces, dots and hyphens only (2-60 chars)</span>
                           </div>
-                        );
-                      }
+                        )}
 
-                      return (
-                        <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                          <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {q.question} {isReq && '*'}</label>
-                          <input
-                            required={isReq}
-                            type={q.type === 'Text' ? 'text' : 'text'}
-                            value={val}
-                            onChange={e => handleMemberCustomAnswerChange(q.question, e.target.value)}
-                            style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', transition: 'all 0.2s' }}
-                          />
-                        </div>
-                      );
-                    })}
+                        {!isFieldOff('Mobile Number') && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. Mobile Number {isFieldRequired('Mobile Number') && '*'}</label>
+                            <div style={{ display: 'flex', alignItems: 'center', border: currentMember.phone ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', overflow: 'hidden', background: currentMember.phone ? '#ffffff' : '#F3F4F6' }}>
+                              <span style={{ padding: '0.85rem 1rem', background: '#e2e8f0', borderRight: '1px solid #cbd5e1', color: '#334155', fontWeight: 700, fontSize: '0.9rem', userSelect: 'none' }}>
+                                +91
+                              </span>
+                              <input
+                                required={isFieldRequired('Mobile Number')}
+                                type="tel"
+                                maxLength={10}
+                                value={(() => {
+                                  if (!currentMember.phone) return '';
+                                  let str = String(currentMember.phone).trim();
+                                  if (str.startsWith('+91')) {
+                                    str = str.replace(/^\+91\s?/, '');
+                                  } else if (str.startsWith('91') && str.length > 10) {
+                                    str = str.replace(/^91\s?/, '');
+                                  }
+                                  return str.replace(/\D/g, '').slice(0, 10);
+                                })()}
+                                onChange={e => {
+                                  const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                  updateMember('phone', digits ? `+91 ${digits}` : '');
+                                }}
+                                placeholder="Enter 10-digit mobile number"
+                                style={{ width: '100%', padding: '0.85rem 1rem', border: 'none', background: 'transparent', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit' }}
+                              />
+                            </div>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>10-digit mobile number starting with 6, 7, 8, or 9</span>
+                          </div>
+                        )}
+
+                        {!isFieldOff('Email') && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. Email Address {isFieldRequired('Email') && '*'}</label>
+                            <input required={isFieldRequired('Email')} type="email" value={currentMember.email} onChange={e => updateMember('email', e.target.value)}
+                              style={{ width: '100%', padding: '0.85rem 1rem', background: currentMember.email ? '#ffffff' : '#F3F4F6', border: currentMember.email ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit' }} />
+                          </div>
+                        )}
+
+                        {/* Educational Info */}
+                        {activeEduInfo?.filter((eInfo: any) => eInfo.required !== 'Off').map((eInfo: any, i: number) => {
+                          const val = currentMember.customAnswers?.find(a => a.question === eInfo.name)?.answer || '';
+                          const isReq = eInfo.required === 'Required';
+                          return (
+                            <div key={`edu-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                              <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {eInfo.name} {isReq && '*'}</label>
+                              <textarea
+                                required={isReq}
+                                rows={1}
+                                value={val}
+                                onChange={e => {
+                                  handleMemberCustomAnswerChange(eInfo.name, e.target.value);
+                                  e.target.style.height = 'auto';
+                                  e.target.style.height = `${Math.max(48, e.target.scrollHeight)}px`;
+                                }}
+                                placeholder={`Enter ${eInfo.name.toLowerCase()}`}
+                                style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', resize: 'none', overflowY: 'hidden', minHeight: '48px', boxSizing: 'border-box', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                              />
+                            </div>
+                          );
+                        })}
+
+                        {/* Custom Questions */}
+                        {event.customQuestions?.map((q: any, i: number) => {
+                          const val = currentMember.customAnswers?.find(a => a.question === q.question)?.answer || '';
+                          const isReq = q.required === 'Required' || q.required === true;
+
+                          if (q.type === 'Dropdown') {
+                            return (
+                              <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {q.question} {isReq && '*'}</label>
+                                <select
+                                  required={isReq}
+                                  value={val}
+                                  onChange={e => handleMemberCustomAnswerChange(q.question, e.target.value)}
+                                  style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', cursor: 'pointer', appearance: 'none' }}
+                                >
+                                  <option value="" disabled>Select an option</option>
+                                  {q.options?.map((opt: string, idx: number) => (
+                                    <option key={idx} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          }
+
+                          if (q.type === 'Checkbox') {
+                            const selectedOpts = Array.isArray(val) ? val : (val ? val.split(', ') : []);
+                            return (
+                              <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {q.question} {isReq && '*'}</label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '4px' }}>
+                                  {q.options?.map((opt: string, idx: number) => (
+                                    <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedOpts.includes(opt)}
+                                        onChange={(e) => {
+                                          let newOpts = [...selectedOpts];
+                                          if (e.target.checked) newOpts.push(opt);
+                                          else newOpts = newOpts.filter(o => o !== opt);
+                                          handleMemberCustomAnswerChange(q.question, newOpts.join(', '));
+                                        }}
+                                        style={{ width: '16px', height: '16px', accentColor: '#8B5CF6', cursor: 'pointer' }}
+                                      />
+                                      {opt}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (q.type === 'File Upload') {
+                            return (
+                              <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {q.question} {isReq && '*'}</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                  <input
+                                    type="file"
+                                    accept="image/*,.pdf,.doc,.docx"
+                                    onChange={e => handleFileUpload(q.question, e)}
+                                    style={{ display: 'none' }}
+                                    id={`file-upload-${currentStep}-${i}-${q.question.replace(/\s+/g, '-')}`}
+                                  />
+                                  <label htmlFor={`file-upload-${currentStep}-${i}-${q.question.replace(/\s+/g, '-')}`} style={{ background: '#F3F4F6', color: '#4B5563', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, border: '1px dashed #9CA3AF' }}>
+                                    {isUploading[q.question] ? 'Uploading...' : 'Choose File'}
+                                  </label>
+                                  {val && <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600 }}>File Attached ✓</span>}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                              <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {q.question} {isReq && '*'}</label>
+                              <textarea
+                                required={isReq}
+                                rows={2}
+                                value={val}
+                                onChange={e => {
+                                  handleMemberCustomAnswerChange(q.question, e.target.value);
+                                  e.target.style.height = 'auto';
+                                  e.target.style.height = `${Math.max(48, e.target.scrollHeight)}px`;
+                                }}
+                                placeholder="Type your answer here..."
+                                style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', resize: 'none', overflowY: 'hidden', minHeight: '48px', boxSizing: 'border-box' }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
                   </div>
                 </motion.div>
 
@@ -889,10 +1132,17 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                {currentStep > 0 && (
+                {(currentStep > 0 || (isMultiPageMode && activeSection > 0)) && (
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(prev => prev - 1)}
+                    onClick={() => {
+                      if (isMultiPageMode && activeSection > 0) {
+                        setActiveSection(prev => prev - 1);
+                      } else if (currentStep > 0) {
+                        setCurrentStep(prev => prev - 1);
+                        if (isMultiPageMode) setActiveSection(currentFormSections.length - 1);
+                      }
+                    }}
                     style={{ background: '#F3F4F6', color: '#4B5563', padding: '1rem', borderRadius: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', flex: 0.4, fontSize: '1.05rem', fontFamily: 'inherit' }}
                   >
                     Back
@@ -916,9 +1166,11 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                     flex: 1
                   }}>
                   {loading ? <Loader2 size={24} className="spin" /> : (
-                    currentStep < teamSize - 1
-                      ? `Next: Member ${currentStep + 2}`
-                      : (totalAmount > 0 ? `Pay Now (₹${totalAmount})` : 'Complete Registration')
+                    isMultiPageMode && activeSection < currentFormSections.length - 1
+                      ? `Next: ${currentFormSections[activeSection + 1]?.title || `Page ${activeSection + 2}`}`
+                      : (currentStep < teamSize - 1
+                          ? `Next: Member ${currentStep + 2}`
+                          : (totalAmount > 0 ? `Pay Now (₹${totalAmount})` : 'Complete Registration'))
                   )}
                 </motion.button>
               </div>

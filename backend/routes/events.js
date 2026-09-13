@@ -180,8 +180,11 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
       title, description, startDate, endDate, mode, location, capacity, imageUrl,
       participantType, teamMin, teamMax, eligibility, timeline, additionalDocs, rules, contacts, announcements, customQuestions,
       tickets, prizes, visibility, registrationControl, personalInfo, eduInfo, organizingTeam, registrationDeadline,
-      generateQRCode, targetDepartment, registrationStatus, externalRegistrationLink
+      generateQRCode, targetDepartment, registrationStatus, externalRegistrationLink, formMode, formSections
     } = req.body;
+
+    if (formMode !== undefined) s.formMode = formMode;
+    if (formSections !== undefined) s.formSections = formSections;
 
     if (title !== undefined) s.title = title;
     if (description !== undefined) s.description = description;
@@ -913,29 +916,36 @@ router.post('/:id/register', requireAuth, async (req, res) => {
     }
 
     // Check if event registration is expired
-    const now = new Date();
-    let isExpired = false;
-
-    if (event.timeline && event.timeline.length > 0) {
-      const regDeadline = event.timeline.find(t => t.title?.toLowerCase().includes('registration'));
-      if (regDeadline && regDeadline.endDate) {
-        const deadline = new Date(regDeadline.endDate);
-        deadline.setHours(23, 59, 59, 999);
-        if (now > deadline) isExpired = true;
-      }
-    }
-    if (!isExpired && event.endDate) {
-      const end = new Date(event.endDate);
-      end.setHours(23, 59, 59, 999);
-      if (now > end) isExpired = true;
-    } else if (!isExpired && event.startDate) {
-      const start = new Date(event.startDate);
-      start.setHours(23, 59, 59, 999);
-      if (now > start) isExpired = true;
-    }
-
-    if (isExpired) {
+    if (event.registrationStatus === 'Closed') {
       return res.status(403).json({ message: 'Registration for this event is closed.' });
+    }
+
+    if (event.registrationStatus !== 'Open') {
+      const now = new Date();
+      let isExpired = false;
+
+      if (event.registrationDeadline) {
+        const d = new Date(event.registrationDeadline);
+        if (!isNaN(d.getTime())) {
+          d.setHours(23, 59, 59, 999);
+          if (now > d) isExpired = true;
+        }
+      }
+
+      if (!isExpired && event.timeline && event.timeline.length > 0) {
+        const regDeadline = event.timeline.find(t => t.title?.toLowerCase().includes('registration'));
+        if (regDeadline && regDeadline.endDate) {
+          const deadline = new Date(regDeadline.endDate);
+          if (!isNaN(deadline.getTime())) {
+            deadline.setHours(23, 59, 59, 999);
+            if (now > deadline) isExpired = true;
+          }
+        }
+      }
+
+      if (isExpired) {
+        return res.status(403).json({ message: 'Registration for this event is closed.' });
+      }
     }
 
     // Target Department check

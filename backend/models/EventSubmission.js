@@ -102,7 +102,24 @@ const eventSubmissionSchema = new mongoose.Schema(
       type: String,
       enum: ['none', 'pending', 'approved'],
       default: 'none'
-    }
+    },
+    formMode: {
+      type: String,
+      enum: ['builtin', 'external', 'multipage'],
+      default: 'builtin'
+    },
+    formSections: [{
+      id: String,
+      title: String,
+      description: String,
+      questions: [{
+        id: String,
+        question: String,
+        type: { type: String, enum: ['Text', 'Checkbox', 'Radio', 'Dropdown', 'File Upload'], default: 'Text' },
+        required: { type: String, enum: ['Required', 'Optional', 'Off'], default: 'Optional' },
+        options: [String]
+      }]
+    }]
   },
   { timestamps: true }
 );
