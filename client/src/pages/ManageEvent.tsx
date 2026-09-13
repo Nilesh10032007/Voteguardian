@@ -954,6 +954,58 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
             </div>
           </div>
 
+          {/* Registration Form Mode Selection */}
+          <div style={{ background: '#fff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #eaeaea', marginTop: '1rem', marginBottom: '1rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 0.25rem 0', color: '#111' }}>Registration Form Mode</h3>
+              <p style={{ margin: '0', fontSize: '0.85rem', color: '#666' }}>Select how participants register for this event.</p>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#111' }}>
+                <input 
+                  type="radio" 
+                  name="manageRegMode" 
+                  checked={formMode === 'builtin'} 
+                  onChange={() => {
+                    setFormMode('builtin');
+                    setExternalLink('');
+                  }} 
+                  style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: '#111' }}
+                />
+                Standard Built-in Form (Single Page)
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#111' }}>
+                <input 
+                  type="radio" 
+                  name="manageRegMode" 
+                  checked={formMode === 'multipage'} 
+                  onChange={() => {
+                    setFormMode('multipage');
+                    setExternalLink('');
+                  }} 
+                  style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: '#111' }}
+                />
+                Multi-Page / Section Form (Google Form style)
+              </label>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#111' }}>
+                <input 
+                  type="radio" 
+                  name="manageRegMode" 
+                  checked={formMode === 'external'} 
+                  onChange={() => {
+                    setFormMode('external');
+                    if (!externalLink) setExternalLink('https://');
+                  }} 
+                  style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: '#111' }}
+                />
+                External Link (e.g. Google Form)
+              </label>
+            </div>
+          </div>
+
           {/* External Registration Link */}
           <div style={{ background: '#fff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #eaeaea', marginTop: '1rem', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -974,11 +1026,11 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
 
           {/* Multi-Page / Section Form Builder */}
           {formMode === 'multipage' ? (
-            <div style={{ background: '#FAF5FF', border: '1px solid #E9D5FF', borderRadius: '12px', padding: '1.5rem' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#6B21A8', margin: 0 }}>Multi-Page / Section Form Builder</h3>
-                  <p style={{ fontSize: '0.85rem', color: '#7E22CE', margin: '4px 0 0 0' }}>Configure pages & sections. Users will navigate step-by-step through each page like Google Forms.</p>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Multi-Page / Section Form Builder</h3>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', margin: '4px 0 0 0' }}>Configure pages & sections. Users will navigate step-by-step through each page like Google Forms.</p>
                 </div>
                 <button
                   type="button"
@@ -992,7 +1044,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                     const updated = [...formSections, newSec];
                     setFormSections(updated);
                   }}
-                  style={{ background: '#7C3AED', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ background: '#0f172a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Plus size={14} /> Add New Page / Section
                 </button>
@@ -1000,10 +1052,10 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {formSections.map((sec: any, sIdx: number) => (
-                  <div key={sec.id || sIdx} style={{ background: '#fff', border: '1px solid #D8B4FE', borderRadius: '10px', padding: '1.25rem', boxShadow: '0 2px 8px rgba(124, 58, 237, 0.05)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem', borderBottom: '1px solid #F3E8FF', paddingBottom: '1rem' }}>
+                  <div key={sec.id || sIdx} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1.25rem', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#9333EA', textTransform: 'uppercase' }}>Section {sIdx + 1} of {formSections.length}</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Section {sIdx + 1} of {formSections.length}</span>
                         <input
                           type="text"
                           value={sec.title}
@@ -1013,7 +1065,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                             setFormSections(updated);
                           }}
                           placeholder="Page / Section Title"
-                          style={{ fontSize: '1.05rem', fontWeight: 700, padding: '8px 12px', borderRadius: '6px', border: '1px solid #E9D5FF', outline: 'none' }}
+                          style={{ fontSize: '1.05rem', fontWeight: 700, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
                         />
                         <input
                           type="text"
@@ -1024,7 +1076,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                             setFormSections(updated);
                           }}
                           placeholder="Section Description / Instructions (optional)"
-                          style={{ fontSize: '0.85rem', padding: '6px 12px', borderRadius: '6px', border: '1px solid #F3E8FF', outline: 'none', color: '#666' }}
+                          style={{ fontSize: '0.85rem', padding: '6px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', outline: 'none', color: '#64748b' }}
                         />
                       </div>
                       {formSections.length > 1 && (
@@ -1045,10 +1097,10 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.75rem' }}>Questions in Section {sIdx + 1}:</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {(sec.questions || []).map((q: any, qIdx: number) => (
-                          <div key={q.id || qIdx} style={{ background: '#FAF5FF', border: '1px solid #E9D5FF', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div key={q.id || qIdx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1E293B' }}>{q.question}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#7E22CE', marginTop: '2px' }}>Type: <b>{q.type}</b> | <b>{q.required}</b></div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>{q.question}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>Type: <b>{q.type}</b> | <b>{q.required}</b></div>
                             </div>
                             <Trash2
                               size={16}
@@ -1064,7 +1116,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                         ))}
 
                         {activeSectionIdx === sIdx ? (
-                          <div style={{ background: '#F8FAFC', border: '1px dashed #A855F7', padding: '1rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
+                          <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', padding: '1rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
                             <input
                               type="text"
                               placeholder="Type question for this page"
@@ -1090,7 +1142,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                                 <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Options</div>
                                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                   {(secQuestion.options || []).map((opt: string, idx: number) => (
-                                    <div key={idx} style={{ background: '#F3E8FF', color: '#9333EA', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <div key={idx} style={{ background: '#f1f5f9', color: '#1e293b', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                       {opt} <X size={12} style={{ cursor: 'pointer' }} onClick={() => setSecQuestion({ ...secQuestion, options: (secQuestion.options || []).filter((_: any, i: number) => i !== idx) })} />
                                     </div>
                                   ))}
@@ -1119,7 +1171,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                                   setSecQuestion({ question: '', type: 'Text', required: 'Optional', options: [] });
                                   setActiveSectionIdx(null);
                                 }
-                              }} style={{ background: '#7C3AED', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Save Question</button>
+                              }} style={{ background: '#0f172a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Save Question</button>
                             </div>
                           </div>
                         ) : (
@@ -1129,7 +1181,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                               setActiveSectionIdx(sIdx);
                               setSecQuestion({ question: '', type: 'Text', required: 'Optional', options: [] });
                             }}
-                            style={{ background: '#F3E8FF', color: '#7E22CE', border: '1px dashed #D8B4FE', padding: '8px 12px', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}
+                            style={{ background: '#f1f5f9', color: '#334155', border: '1px dashed #cbd5e1', padding: '8px 12px', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}
                           >
                             <Plus size={14} /> Add Question to Page {sIdx + 1}
                           </button>
