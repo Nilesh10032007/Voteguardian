@@ -228,12 +228,14 @@ const AdminDashboard: React.FC = () => {
     }
   };
   const deleteEvent = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this event?')) return;
+    if (!window.confirm('Are you sure you want to delete this event? This action will permanently delete it from the database.')) return;
     try {
       await api.delete(`/admin/events/${id}`);
+      setEvents(prev => prev.filter(e => (e._id !== id && e.id !== id)));
       fetchInitialData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete failed:', err);
+      alert(err.response?.data?.message || 'Failed to delete event');
     }
   };
 

@@ -177,6 +177,8 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
 // @route   DELETE /api/admin/events/:id
 router.delete('/events/:id', protect, admin, async (req, res) => {
   try {
+    const ClubsEvent = require('../models/ClubsEvent');
+
     let event = await Event.findById(req.params.id);
     if (event) {
       await Event.deleteOne({ _id: req.params.id });
@@ -186,6 +188,12 @@ router.delete('/events/:id', protect, admin, async (req, res) => {
     event = await EventSubmission.findById(req.params.id);
     if (event) {
       await EventSubmission.deleteOne({ _id: req.params.id });
+      return res.json({ message: 'Event removed' });
+    }
+
+    event = await ClubsEvent.findById(req.params.id);
+    if (event) {
+      await ClubsEvent.deleteOne({ _id: req.params.id });
       return res.json({ message: 'Event removed' });
     }
 

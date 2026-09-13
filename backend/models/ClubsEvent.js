@@ -34,6 +34,24 @@ const eventSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  externalRegistrationLink: { type: String, default: '' },
+  formMode: {
+    type: String,
+    enum: ['builtin', 'external', 'multipage'],
+    default: 'builtin'
+  },
+  formSections: [{
+    id: String,
+    title: String,
+    description: String,
+    questions: [{
+      id: String,
+      question: String,
+      type: { type: String, enum: ['Text', 'Checkbox', 'Radio', 'Dropdown', 'File Upload'], default: 'Text' },
+      required: { type: String, enum: ['Required', 'Optional', 'Off'], default: 'Optional' },
+      options: [String]
+    }]
+  }],
   location: {
     type: String,
     default: ''

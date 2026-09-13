@@ -764,6 +764,14 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
   const [isAddingEdu, setIsAddingEdu] = useState(false);
   const [newEduField, setNewEduField] = useState('');
 
+  const [formMode, setFormMode] = useState<'builtin' | 'external' | 'multipage'>(event?.formMode || (event?.externalRegistrationLink ? 'external' : 'builtin'));
+  const [formSections, setFormSections] = useState<any[]>(event?.formSections?.length > 0 ? event.formSections : [
+    { id: 'sec-1', title: 'Page 1: Basic Information', description: 'Please fill in your basic details', questions: [] },
+    { id: 'sec-2', title: 'Page 2: Event Questions', description: 'Additional questions for this event', questions: [] }
+  ]);
+  const [activeSectionIdx, setActiveSectionIdx] = useState<number | null>(null);
+  const [secQuestion, setSecQuestion] = useState<any>({ question: '', type: 'Text', required: 'Optional', options: [] });
+
   const [customQuestions, setCustomQuestions] = useState<any[]>(event?.customQuestions?.length > 0 ? event.customQuestions : []);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
   const [newQuestion, setNewQuestion] = useState<any>({ question: '', type: 'Text', required: 'Optional', options: [] });
@@ -949,26 +957,44 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
           {/* Registration Mode Toggle */}
           <div style={{ background: '#fff', padding: '1.25rem', borderRadius: '12px', border: '1px solid #eaeaea', marginTop: '1rem', marginBottom: '1rem' }}>
             <div style={{ marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: '#111' }}>Registration Mode</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: '#111' }}>Registration Form Mode</h3>
               <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#666' }}>Choose how you want to collect registrations for this event.</p>
               <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#444' }}>
                   <input 
                     type="radio" 
                     name="manageRegMode" 
-                    checked={!externalLink} 
-                    onChange={() => setExternalLink('')} 
+                    checked={formMode === 'builtin'} 
+                    onChange={() => {
+                      setFormMode('builtin');
+                      setExternalLink('');
+                    }} 
                     style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: '#7c3aed' }}
                   />
                   Built-in Eventum Form
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#444' }}>
+                  <input 
+                    type="radio" 
+                    name="manageRegMode" 
+                    checked={formMode === 'multipage'} 
+                    onChange={() => {
+                      setFormMode('multipage');
+                      setExternalLink('');
+                    }} 
+                    style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: '#7c3aed' }}
+                  />
+                  Multi-Page / Section Form (Google Form style)
                 </label>
                 
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#444' }}>
                   <input 
                     type="radio" 
                     name="manageRegMode" 
-                    checked={!!externalLink} 
+                    checked={formMode === 'external'} 
                     onChange={() => {
+                      setFormMode('external');
                       if (!externalLink) setExternalLink('https://');
                     }} 
                     style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: '#7c3aed' }}
@@ -978,7 +1004,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
               </div>
             </div>
 
-            {externalLink ? (
+            {formMode === 'external' ? (
               <div style={{ marginTop: '0.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#555', marginBottom: '0.5rem' }}>External URL</div>
                 <input type="url" placeholder="https://..." value={externalLink} onChange={e => setExternalLink(e.target.value)} style={{ width: '100%', background: '#fff', border: '1px solid #ccc', padding: '12px', borderRadius: '8px', fontWeight: 600, outline: 'none' }} />
@@ -987,97 +1013,273 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
             ) : null}
           </div>
 
-          {/* Custom Questions */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', fontWeight: 700, color: '#111', marginBottom: '1rem' }}>
-              <Edit2 size={16} color="#a855f7" /> Custom Questions
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {customQuestions.map(q => (
-                <div key={q.question || q.id || crypto.randomUUID()} style={{ border: '1px solid #eaeaea', padding: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <LayoutGrid size={16} color="#888" />
-                    <div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#111' }}>{q.question}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#888' }}>{q.type} | {q.required}</div>
-                    </div>
-                  </div>
-                  <Trash2 onClick={async () => {
-                    const updated = customQuestions.filter(c => c.question !== q.question);
-                    setCustomQuestions(updated);
-                    await saveEvent({ customQuestions: updated });
-                  }} size={16} color="#ef4444" style={{ cursor: 'pointer' }} />
+          {/* Multi-Page / Section Form Builder */}
+          {formMode === 'multipage' ? (
+            <div style={{ background: '#FAF5FF', border: '1px solid #E9D5FF', borderRadius: '12px', padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#6B21A8', margin: 0 }}>Multi-Page / Section Form Builder</h3>
+                  <p style={{ fontSize: '0.85rem', color: '#7E22CE', margin: '4px 0 0 0' }}>Configure pages & sections. Users will navigate step-by-step through each page like Google Forms.</p>
                 </div>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newSec = {
+                      id: String(Date.now()),
+                      title: `Page ${formSections.length + 1}: Section Title`,
+                      description: 'Provide instructions for this section',
+                      questions: []
+                    };
+                    const updated = [...formSections, newSec];
+                    setFormSections(updated);
+                  }}
+                  style={{ background: '#7C3AED', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Plus size={14} /> Add New Page / Section
+                </button>
+              </div>
 
-              {isAddingQuestion && (
-                <div style={{ border: '1px dashed #ccc', padding: '1rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <input type="text" placeholder="Type your question here" value={newQuestion.question} onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} />
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <select value={newQuestion.type} onChange={e => setNewQuestion({ ...newQuestion, type: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}>
-                      <option value="Text">Text</option>
-                      <option value="Dropdown">Dropdown</option>
-                      <option value="Checkbox">Checkbox</option>
-                      <option value="File Upload">File Upload</option>
-                    </select>
-                    <select value={newQuestion.required} onChange={e => setNewQuestion({ ...newQuestion, required: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}>
-                      <option value="Required">Required</option>
-                      <option value="Optional">Optional</option>
-                    </select>
-                  </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {formSections.map((sec: any, sIdx: number) => (
+                  <div key={sec.id || sIdx} style={{ background: '#fff', border: '1px solid #D8B4FE', borderRadius: '10px', padding: '1.25rem', boxShadow: '0 2px 8px rgba(124, 58, 237, 0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem', borderBottom: '1px solid #F3E8FF', pb: '1rem' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#9333EA', textTransform: 'uppercase' }}>Section {sIdx + 1} of {formSections.length}</span>
+                        <input
+                          type="text"
+                          value={sec.title}
+                          onChange={(e) => {
+                            const updated = [...formSections];
+                            updated[sIdx].title = e.target.value;
+                            setFormSections(updated);
+                          }}
+                          placeholder="Page / Section Title"
+                          style={{ fontSize: '1.05rem', fontWeight: 700, padding: '8px 12px', borderRadius: '6px', border: '1px solid #E9D5FF', outline: 'none' }}
+                        />
+                        <input
+                          type="text"
+                          value={sec.description}
+                          onChange={(e) => {
+                            const updated = [...formSections];
+                            updated[sIdx].description = e.target.value;
+                            setFormSections(updated);
+                          }}
+                          placeholder="Section Description / Instructions (optional)"
+                          style={{ fontSize: '0.85rem', padding: '6px 12px', borderRadius: '6px', border: '1px solid #F3E8FF', outline: 'none', color: '#666' }}
+                        />
+                      </div>
+                      {formSections.length > 1 && (
+                        <Trash2
+                          size={18}
+                          color="#EF4444"
+                          style={{ cursor: 'pointer', marginTop: '8px' }}
+                          onClick={() => {
+                            const updated = formSections.filter((_: any, idx: number) => idx !== sIdx);
+                            setFormSections(updated);
+                          }}
+                        />
+                      )}
+                    </div>
 
-                  {(newQuestion.type === 'Checkbox' || newQuestion.type === 'Dropdown') && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Options</div>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {(newQuestion.options || []).map((opt: string, idx: number) => (
-                          <div key={idx} style={{ background: '#f3e8ff', color: '#9333ea', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            {opt} <X size={12} style={{ cursor: 'pointer' }} onClick={() => setNewQuestion({ ...newQuestion, options: (newQuestion.options || []).filter((_: any, i: number) => i !== idx) })} />
+                    {/* Questions in Section */}
+                    <div style={{ marginTop: '1rem' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.75rem' }}>Questions in Section {sIdx + 1}:</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {(sec.questions || []).map((q: any, qIdx: number) => (
+                          <div key={q.id || qIdx} style={{ background: '#FAF5FF', border: '1px solid #E9D5FF', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1E293B' }}>{q.question}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#7E22CE', marginTop: '2px' }}>Type: <b>{q.type}</b> | <b>{q.required}</b></div>
+                            </div>
+                            <Trash2
+                              size={16}
+                              color="#EF4444"
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => {
+                                const updated = [...formSections];
+                                updated[sIdx].questions = updated[sIdx].questions.filter((_: any, idx: number) => idx !== qIdx);
+                                setFormSections(updated);
+                              }}
+                            />
                           </div>
                         ))}
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input type="text" placeholder="Add option" id="new-option-input" style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }} />
-                        <button type="button" onClick={() => {
-                          const input = document.getElementById('new-option-input') as HTMLInputElement;
-                          if (input && input.value.trim()) {
-                            const currentOptions = newQuestion.options || [];
-                            setNewQuestion({ ...newQuestion, options: [...currentOptions, input.value.trim()] });
-                            input.value = '';
-                          }
-                        }} style={{ background: '#111', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Add Option</button>
+
+                        {activeSectionIdx === sIdx ? (
+                          <div style={{ background: '#F8FAFC', border: '1px dashed #A855F7', padding: '1rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
+                            <input
+                              type="text"
+                              placeholder="Type question for this page"
+                              value={secQuestion.question}
+                              onChange={e => setSecQuestion({ ...secQuestion, question: e.target.value })}
+                              style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', outline: 'none' }}
+                            />
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                              <select value={secQuestion.type} onChange={e => setSecQuestion({ ...secQuestion, type: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', flex: 1 }}>
+                                <option value="Text">Text</option>
+                                <option value="Dropdown">Dropdown</option>
+                                <option value="Checkbox">Checkbox</option>
+                                <option value="File Upload">File Upload</option>
+                              </select>
+                              <select value={secQuestion.required} onChange={e => setSecQuestion({ ...secQuestion, required: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', flex: 1 }}>
+                                <option value="Required">Required</option>
+                                <option value="Optional">Optional</option>
+                              </select>
+                            </div>
+
+                            {(secQuestion.type === 'Checkbox' || secQuestion.type === 'Dropdown') && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Options</div>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                  {(secQuestion.options || []).map((opt: string, idx: number) => (
+                                    <div key={idx} style={{ background: '#F3E8FF', color: '#9333EA', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      {opt} <X size={12} style={{ cursor: 'pointer' }} onClick={() => setSecQuestion({ ...secQuestion, options: (secQuestion.options || []).filter((_: any, i: number) => i !== idx) })} />
+                                    </div>
+                                  ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <input type="text" placeholder="Add option" id={`sec-option-input-${sIdx}`} style={{ padding: '6px', borderRadius: '4px', border: '1px solid #CCC', flex: 1 }} />
+                                  <button type="button" onClick={() => {
+                                    const input = document.getElementById(`sec-option-input-${sIdx}`) as HTMLInputElement;
+                                    if (input && input.value.trim()) {
+                                      const currentOptions = secQuestion.options || [];
+                                      setSecQuestion({ ...secQuestion, options: [...currentOptions, input.value.trim()] });
+                                      input.value = '';
+                                    }
+                                  }} style={{ background: '#111', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Add Option</button>
+                                </div>
+                              </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                              <button onClick={() => setActiveSectionIdx(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                              <button onClick={() => {
+                                if (secQuestion.question) {
+                                  const updated = [...formSections];
+                                  updated[sIdx].questions = [...(updated[sIdx].questions || []), { id: String(Date.now()), ...secQuestion }];
+                                  setFormSections(updated);
+                                  setSecQuestion({ question: '', type: 'Text', required: 'Optional', options: [] });
+                                  setActiveSectionIdx(null);
+                                }
+                              }} style={{ background: '#7C3AED', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Save Question</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveSectionIdx(sIdx);
+                              setSecQuestion({ question: '', type: 'Text', required: 'Optional', options: [] });
+                            }}
+                            style={{ background: '#F3E8FF', color: '#7E22CE', border: '1px dashed #D8B4FE', padding: '8px 12px', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}
+                          >
+                            <Plus size={14} /> Add Question to Page {sIdx + 1}
+                          </button>
+                        )}
                       </div>
                     </div>
-                  )}
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                    <button onClick={() => setIsAddingQuestion(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-                    <button onClick={async () => {
-                      if (newQuestion.question) {
-                        const updated = [...customQuestions, { id: Date.now(), ...newQuestion }];
-                        const success = await saveEvent({ customQuestions: updated });
-                        if (success) {
-                          setCustomQuestions(updated);
-                          setNewQuestion({ question: '', type: 'Text', required: 'Optional', options: [] });
-                          setIsAddingQuestion(false);
-                        }
-                      }
-                    }} style={{ background: '#111', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Save Question</button>
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Custom Questions (Single Page Standard Form) */
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', fontWeight: 700, color: '#111', marginBottom: '1rem' }}>
+                <Edit2 size={16} color="#a855f7" /> Custom Questions
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {customQuestions.map(q => (
+                  <div key={q.question || q.id || crypto.randomUUID()} style={{ border: '1px solid #eaeaea', padding: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <LayoutGrid size={16} color="#888" />
+                      <div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#111' }}>{q.question}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#888' }}>{q.type} | {q.required}</div>
+                      </div>
+                    </div>
+                    <Trash2 onClick={async () => {
+                      const updated = customQuestions.filter(c => c.question !== q.question);
+                      setCustomQuestions(updated);
+                      await saveEvent({ customQuestions: updated });
+                    }} size={16} color="#ef4444" style={{ cursor: 'pointer' }} />
+                  </div>
+                ))}
+
+                {isAddingQuestion && (
+                  <div style={{ border: '1px dashed #ccc', padding: '1rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <input type="text" placeholder="Type your question here" value={newQuestion.question} onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} />
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <select value={newQuestion.type} onChange={e => setNewQuestion({ ...newQuestion, type: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}>
+                        <option value="Text">Text</option>
+                        <option value="Dropdown">Dropdown</option>
+                        <option value="Checkbox">Checkbox</option>
+                        <option value="File Upload">File Upload</option>
+                      </select>
+                      <select value={newQuestion.required} onChange={e => setNewQuestion({ ...newQuestion, required: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}>
+                        <option value="Required">Required</option>
+                        <option value="Optional">Optional</option>
+                      </select>
+                    </div>
+
+                    {(newQuestion.type === 'Checkbox' || newQuestion.type === 'Dropdown') && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Options</div>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {(newQuestion.options || []).map((opt: string, idx: number) => (
+                            <div key={idx} style={{ background: '#f3e8ff', color: '#9333ea', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              {opt} <X size={12} style={{ cursor: 'pointer' }} onClick={() => setNewQuestion({ ...newQuestion, options: (newQuestion.options || []).filter((_: any, i: number) => i !== idx) })} />
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input type="text" placeholder="Add option" id="new-option-input" style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }} />
+                          <button type="button" onClick={() => {
+                            const input = document.getElementById('new-option-input') as HTMLInputElement;
+                            if (input && input.value.trim()) {
+                              const currentOptions = newQuestion.options || [];
+                              setNewQuestion({ ...newQuestion, options: [...currentOptions, input.value.trim()] });
+                              input.value = '';
+                            }
+                          }} style={{ background: '#111', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Add Option</button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                      <button onClick={() => setIsAddingQuestion(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                      <button onClick={async () => {
+                        if (newQuestion.question) {
+                          const updated = [...customQuestions, { id: Date.now(), ...newQuestion }];
+                          const success = await saveEvent({ customQuestions: updated });
+                          if (success) {
+                            setCustomQuestions(updated);
+                            setNewQuestion({ question: '', type: 'Text', required: 'Optional', options: [] });
+                            setIsAddingQuestion(false);
+                          }
+                        }
+                      }} style={{ background: '#111', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Save Question</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {!isAddingQuestion && (
+                <button onClick={() => setIsAddingQuestion(true)} style={{ marginTop: '1rem', background: '#eaeaea', border: 'none', padding: '8px 12px', borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Plus size={14} /> Add Question</button>
               )}
             </div>
-
-            {!isAddingQuestion && (
-              <button onClick={() => setIsAddingQuestion(true)} style={{ marginTop: '1rem', background: '#eaeaea', border: 'none', padding: '8px 12px', borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}><Plus size={14} /> Add Question</button>
-            )}
-          </div>
+          )}
 
         </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem', borderTop: '1px solid #eaeaea', paddingTop: '1.5rem' }}>
         <button onClick={async () => {
-          const updatePayload: any = { participantType: partType === 'Team' ? 'team' : 'individual', registrationStatus: regWindow, externalRegistrationLink: externalLink };
+          const updatePayload: any = { 
+            participantType: partType === 'Team' ? 'team' : 'individual', 
+            registrationStatus: regWindow, 
+            externalRegistrationLink: externalLink,
+            formMode,
+            formSections
+          };
           if (partType === 'Team') {
             updatePayload.teamMin = parseInt(teamMin) || 1;
             updatePayload.teamMax = parseInt(teamMax) || 4;
