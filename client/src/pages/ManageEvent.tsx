@@ -5,6 +5,7 @@ import { LayoutGrid, Plus, Bell, Search, Image as ImageIcon, MapPin, ChevronDown
 import darkLogo from '../logo/dark logo.png';
 import Footer from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
+import { RichTextEditor } from '../components/RichTextEditor';
 
 // -------------------------------------------------------------
 // OVERVIEW TAB
@@ -410,9 +411,12 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
           </button>
         </div>
         {isEditingDesc ? (
-          <textarea value={description} onChange={e => setDescription(e.target.value)} style={{ width: '100%', minHeight: '100px', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem' }} />
+          <RichTextEditor value={description} onChange={setDescription} minHeight="140px" />
         ) : (
-          <div style={{ fontSize: '0.9rem', color: '#555', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{description}</div>
+          <div
+            style={{ fontSize: '0.9rem', color: '#555', lineHeight: 1.6 }}
+            dangerouslySetInnerHTML={{ __html: description || 'No description provided.' }}
+          />
         )}
       </div>
 
@@ -587,9 +591,12 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
           </button>
         </div>
         {isEditingRules ? (
-          <textarea value={rules} onChange={e => setRules(e.target.value)} style={{ width: '100%', minHeight: '100px', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem' }} />
+          <RichTextEditor value={rules} onChange={setRules} minHeight="140px" />
         ) : (
-          <div style={{ fontSize: '0.9rem', color: '#555', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{rules}</div>
+          <div
+            style={{ fontSize: '0.9rem', color: '#555', lineHeight: 1.6 }}
+            dangerouslySetInnerHTML={{ __html: rules || 'No rules provided.' }}
+          />
         )}
       </div>
 
