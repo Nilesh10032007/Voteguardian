@@ -1001,7 +1001,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {formSections.map((sec: any, sIdx: number) => (
                   <div key={sec.id || sIdx} style={{ background: '#fff', border: '1px solid #D8B4FE', borderRadius: '10px', padding: '1.25rem', boxShadow: '0 2px 8px rgba(124, 58, 237, 0.05)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem', borderBottom: '1px solid #F3E8FF', pb: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem', borderBottom: '1px solid #F3E8FF', paddingBottom: '1rem' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#9333EA', textTransform: 'uppercase' }}>Section {sIdx + 1} of {formSections.length}</span>
                         <input
