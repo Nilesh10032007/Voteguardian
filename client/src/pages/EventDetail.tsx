@@ -338,9 +338,10 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                       {showRules ? <ChevronUp size={18} color="#94a3b8" /> : <ChevronRight size={18} color="#94a3b8" />}
                     </button>
                     {showRules && (
-                      <div style={{ padding: '0 1rem 1rem 1rem', fontSize: '0.95rem', color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
-                        {rawEvent.rules}
-                      </div>
+                      <div
+                        style={{ padding: '0 1rem 1rem 1rem', fontSize: '0.95rem', color: '#475569', lineHeight: 1.6, borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}
+                        dangerouslySetInnerHTML={{ __html: rawEvent.rules }}
+                      />
                     )}
                   </div>
                 </div>
@@ -585,9 +586,10 @@ const EventDetail = ({ hash }: { hash?: string }) => {
               {/* About Section */}
               <div className="order-4" style={{ marginBottom: '2.5rem' }}>
                 <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '0.75rem', color: '#0f172a' }}>About</h2>
-                <p style={{ fontSize: '1rem', color: '#475569', lineHeight: 1.7, fontWeight: 500, whiteSpace: 'pre-wrap' }}>
-                  {currentEvent.description}
-                </p>
+                <div
+                  style={{ fontSize: '1rem', color: '#475569', lineHeight: 1.7, fontWeight: 500 }}
+                  dangerouslySetInnerHTML={{ __html: currentEvent.description }}
+                />
               </div>
 
               {/* Stages & Timeline */}
