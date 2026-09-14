@@ -1612,6 +1612,17 @@ function ParticipantsTab({ event }: { event: any }) {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
                           {p.answers.map((ans: any, idx: number) => {
                             const isLink = ans.answer && typeof ans.answer === 'string' && (ans.answer.startsWith('http') || ans.answer.startsWith('blob:'));
+                            const formattedAns = (() => {
+                              if (!ans.answer) return null;
+                              if (Array.isArray(ans.answer)) {
+                                return Array.from(new Set(ans.answer)).filter(Boolean).join(', ');
+                              }
+                              if (typeof ans.answer === 'string' && ans.answer.includes('|||')) {
+                                return Array.from(new Set(ans.answer.split('|||'))).filter(Boolean).join(', ');
+                              }
+                              return String(ans.answer);
+                            })();
+
                             return (
                               <div key={idx} style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
                                 <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginBottom: '4px' }}>{ans.question}</div>
@@ -1621,7 +1632,7 @@ function ParticipantsTab({ event }: { event: any }) {
                                   </a>
                                 ) : (
                                   <div style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 600, wordBreak: 'break-word' }}>
-                                    {ans.answer || <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: 400 }}>N/A</span>}
+                                    {formattedAns || <span style={{ color: '#94a3b8', fontStyle: 'italic', fontWeight: 400 }}>N/A</span>}
                                   </div>
                                 )}
                               </div>
@@ -1650,13 +1661,24 @@ function ParticipantsTab({ event }: { event: any }) {
                                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
                                     {m.customAnswers.map((ans: any, aIdx: number) => {
                                       const isLink = ans.answer && typeof ans.answer === 'string' && (ans.answer.startsWith('http') || ans.answer.startsWith('blob:'));
+                                      const formattedAns = (() => {
+                                        if (!ans.answer) return null;
+                                        if (Array.isArray(ans.answer)) {
+                                          return Array.from(new Set(ans.answer)).filter(Boolean).join(', ');
+                                        }
+                                        if (typeof ans.answer === 'string' && ans.answer.includes('|||')) {
+                                          return Array.from(new Set(ans.answer.split('|||'))).filter(Boolean).join(', ');
+                                        }
+                                        return String(ans.answer);
+                                      })();
+
                                       return (
                                         <div key={aIdx} style={{ background: '#ffffff', padding: '10px 14px', borderRadius: '6px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column' }}>
                                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>{ans.question}</span>
                                           {isLink ? (
                                             <a href={ans.answer} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700, color: '#3b82f6', textDecoration: 'none' }}>View File</a>
                                           ) : (
-                                            <span style={{ fontSize: '0.85rem', color: '#0F172A', fontWeight: 600 }}>{ans.answer || 'N/A'}</span>
+                                            <span style={{ fontSize: '0.85rem', color: '#0F172A', fontWeight: 600 }}>{formattedAns || 'N/A'}</span>
                                           )}
                                         </div>
                                       )

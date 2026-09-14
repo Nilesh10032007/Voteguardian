@@ -647,6 +647,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
 
       <motion.div
         initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+        className="registration-modal-container"
         style={{
           width: '100%', maxWidth: '700px',
           padding: '2.5rem',
@@ -696,18 +697,18 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                 )}
 
                 <motion.div key={currentStep} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
-                  <div style={{ background: '#ffffff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div className="registration-inner-card" style={{ background: '#ffffff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
                     {/* Multi-Page Section Header & Questions */}
                     {isMultiPageMode && currentSectionData ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         {/* Page Heading & Description at the very top */}
                         <div style={{ borderBottom: '2px solid #f1f5f9', paddingBottom: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 600, color: '#111827' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 600, color: '#111827', flex: 1, minWidth: '180px' }}>
                               {currentSectionData.title || `Page ${activeSection + 1}`}
                             </h3>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', background: '#f1f5f9', padding: '4px 12px', borderRadius: '20px' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', background: '#f1f5f9', padding: '4px 12px', borderRadius: '20px', whiteSpace: 'nowrap', flexShrink: 0 }}>
                               Page {activeSection + 1} of {currentFormSections.length}
                             </span>
                           </div>
@@ -844,7 +845,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                           }
 
                           if (q.type === 'Checkbox') {
-                            const selectedOpts = Array.isArray(val)
+                            const selectedOpts: string[] = Array.isArray(val)
                               ? val
                               : (val ? (typeof val === 'string' && val.includes('|||') ? val.split('|||') : (q.options?.includes(val) ? [val] : val.split(', '))) : []);
                             return (
@@ -857,13 +858,10 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                                         type="checkbox"
                                         checked={selectedOpts.includes(opt)}
                                         onChange={(e) => {
-                                          let newOpts = [...selectedOpts];
-                                          if (e.target.checked) {
-                                            if (!newOpts.includes(opt)) newOpts.push(opt);
-                                          } else {
-                                            newOpts = newOpts.filter(o => o !== opt);
-                                          }
-                                          handleMemberCustomAnswerChange(q.question, newOpts.join('|||'));
+                                          let newOpts = e.target.checked
+                                            ? (selectedOpts.includes(opt) ? selectedOpts : [...selectedOpts, opt])
+                                            : selectedOpts.filter(o => o !== opt);
+                                          handleMemberCustomAnswerChange(q.question, newOpts.length > 0 ? newOpts : '');
                                         }}
                                         style={{ width: '16px', height: '16px', accentColor: '#000000', cursor: 'pointer' }}
                                       />
@@ -1032,7 +1030,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                           }
 
                           if (q.type === 'Checkbox') {
-                            const selectedOpts = Array.isArray(val)
+                            const selectedOpts: string[] = Array.isArray(val)
                               ? val
                               : (val ? (typeof val === 'string' && val.includes('|||') ? val.split('|||') : (q.options?.includes(val) ? [val] : val.split(', '))) : []);
                             return (
@@ -1045,13 +1043,10 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                                         type="checkbox"
                                         checked={selectedOpts.includes(opt)}
                                         onChange={(e) => {
-                                          let newOpts = [...selectedOpts];
-                                          if (e.target.checked) {
-                                            if (!newOpts.includes(opt)) newOpts.push(opt);
-                                          } else {
-                                            newOpts = newOpts.filter(o => o !== opt);
-                                          }
-                                          handleMemberCustomAnswerChange(q.question, newOpts.join('|||'));
+                                          let newOpts = e.target.checked
+                                            ? (selectedOpts.includes(opt) ? selectedOpts : [...selectedOpts, opt])
+                                            : selectedOpts.filter(o => o !== opt);
+                                          handleMemberCustomAnswerChange(q.question, newOpts.length > 0 ? newOpts : '');
                                         }}
                                         style={{ width: '16px', height: '16px', accentColor: '#8B5CF6', cursor: 'pointer' }}
                                       />
