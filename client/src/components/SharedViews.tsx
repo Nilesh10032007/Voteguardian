@@ -535,6 +535,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
     const m = teamMembers[currentStep];
 
     for (let q of (currentSectionData.questions || [])) {
+      if (q.type === 'Header Text / Note' || q.type?.includes('Header Text')) continue;
       if (q.required === 'Required' || q.required === true) {
         const answered = m.customAnswers?.find(a => a.question === q.question);
         if (!answered || !answered.answer) return { valid: false, message: `Question "${q.question}" on ${currentSectionData.title || `Page ${activeSection + 1}`} is required` };
@@ -717,11 +718,11 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                           )}
                         </div>
 
-                        {/* Participant Details Heading right above Question 1 */}
-                        <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#111827', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
-                          {isTeam ? `Member ${currentStep + 1} Details` : 'Participant Details'}
-                          {isTeam && <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4b5563' }}>{currentStep + 1} of {teamSize}</span>}
-                        </h4>
+                        {isTeam && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.85rem', fontWeight: 600, color: '#4b5563' }}>
+                            Member {currentStep + 1} of {teamSize}
+                          </div>
+                        )}
 
                         {/* Page 1 includes personal & edu info */}
                         {activeSection === 0 && (
@@ -813,6 +814,16 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                           const val = currentMember.customAnswers?.find(a => a.question === q.question)?.answer || '';
                           const isReq = q.required === 'Required' || q.required === true;
 
+                          if (q.type === 'Header Text / Note' || q.type?.includes('Header Text')) {
+                            return (
+                              <div key={`sec-q-${i}`} style={{ background: '#f8fafc', padding: '1rem 1.25rem', borderRadius: '10px', borderLeft: '4px solid #0f172a', border: '1px solid #e2e8f0', borderLeftWidth: '4px', margin: '0.25rem 0' }}>
+                                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                                  {q.question}
+                                </div>
+                              </div>
+                            );
+                          }
+
                           if (q.type === 'Dropdown') {
                             return (
                               <div key={`sec-q-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -833,7 +844,9 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                           }
 
                           if (q.type === 'Checkbox') {
-                            const selectedOpts = Array.isArray(val) ? val : (val ? val.split(', ') : []);
+                            const selectedOpts = Array.isArray(val)
+                              ? val
+                              : (val ? (typeof val === 'string' && val.includes('|||') ? val.split('|||') : (q.options?.includes(val) ? [val] : val.split(', '))) : []);
                             return (
                               <div key={`sec-q-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                 <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. {q.question} {isReq && '*'}</label>
@@ -845,9 +858,12 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                                         checked={selectedOpts.includes(opt)}
                                         onChange={(e) => {
                                           let newOpts = [...selectedOpts];
-                                          if (e.target.checked) newOpts.push(opt);
-                                          else newOpts = newOpts.filter(o => o !== opt);
-                                          handleMemberCustomAnswerChange(q.question, newOpts.join(', '));
+                                          if (e.target.checked) {
+                                            if (!newOpts.includes(opt)) newOpts.push(opt);
+                                          } else {
+                                            newOpts = newOpts.filter(o => o !== opt);
+                                          }
+                                          handleMemberCustomAnswerChange(q.question, newOpts.join('|||'));
                                         }}
                                         style={{ width: '16px', height: '16px', accentColor: '#000000', cursor: 'pointer' }}
                                       />
@@ -986,6 +1002,16 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                           const val = currentMember.customAnswers?.find(a => a.question === q.question)?.answer || '';
                           const isReq = q.required === 'Required' || q.required === true;
 
+                          if (q.type === 'Header Text / Note' || q.type?.includes('Header Text')) {
+                            return (
+                              <div key={`custom-${i}`} style={{ background: '#f8fafc', padding: '1rem 1.25rem', borderRadius: '10px', borderLeft: '4px solid #0f172a', border: '1px solid #e2e8f0', borderLeftWidth: '4px', margin: '0.25rem 0' }}>
+                                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                                  {q.question}
+                                </div>
+                              </div>
+                            );
+                          }
+
                           if (q.type === 'Dropdown') {
                             return (
                               <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -1006,7 +1032,9 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                           }
 
                           if (q.type === 'Checkbox') {
-                            const selectedOpts = Array.isArray(val) ? val : (val ? val.split(', ') : []);
+                            const selectedOpts = Array.isArray(val)
+                              ? val
+                              : (val ? (typeof val === 'string' && val.includes('|||') ? val.split('|||') : (q.options?.includes(val) ? [val] : val.split(', '))) : []);
                             return (
                               <div key={`custom-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                 <label style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>{qNum++}. {q.question} {isReq && '*'}</label>
@@ -1018,9 +1046,12 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                                         checked={selectedOpts.includes(opt)}
                                         onChange={(e) => {
                                           let newOpts = [...selectedOpts];
-                                          if (e.target.checked) newOpts.push(opt);
-                                          else newOpts = newOpts.filter(o => o !== opt);
-                                          handleMemberCustomAnswerChange(q.question, newOpts.join(', '));
+                                          if (e.target.checked) {
+                                            if (!newOpts.includes(opt)) newOpts.push(opt);
+                                          } else {
+                                            newOpts = newOpts.filter(o => o !== opt);
+                                          }
+                                          handleMemberCustomAnswerChange(q.question, newOpts.join('|||'));
                                         }}
                                         style={{ width: '16px', height: '16px', accentColor: '#8B5CF6', cursor: 'pointer' }}
                                       />
