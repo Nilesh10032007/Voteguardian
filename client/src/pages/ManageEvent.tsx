@@ -1100,7 +1100,9 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                           <div key={q.id || qIdx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                               <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>{q.question}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>Type: <b>{q.type}</b> | <b>{q.required}</b></div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                                Type: <b>{q.type}</b>{q.type !== 'Header Text / Note' && <> | <b>{q.required}</b></>}
+                              </div>
                             </div>
                             <Trash2
                               size={16}
@@ -1117,24 +1119,37 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
 
                         {activeSectionIdx === sIdx ? (
                           <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', padding: '1rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
-                            <input
-                              type="text"
-                              placeholder="Type question for this page"
-                              value={secQuestion.question}
-                              onChange={e => setSecQuestion({ ...secQuestion, question: e.target.value })}
-                              style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', outline: 'none' }}
-                            />
+                            {secQuestion.type === 'Header Text / Note' ? (
+                              <textarea
+                                rows={3}
+                                placeholder="Type heading, instructions, or rules for this page..."
+                                value={secQuestion.question}
+                                onChange={e => setSecQuestion({ ...secQuestion, question: e.target.value })}
+                                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', outline: 'none', fontFamily: 'inherit', resize: 'vertical' }}
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                placeholder="Type question for this page"
+                                value={secQuestion.question}
+                                onChange={e => setSecQuestion({ ...secQuestion, question: e.target.value })}
+                                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', outline: 'none' }}
+                              />
+                            )}
                             <div style={{ display: 'flex', gap: '1rem' }}>
-                              <select value={secQuestion.type} onChange={e => setSecQuestion({ ...secQuestion, type: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', flex: 1 }}>
-                                <option value="Text">Text</option>
+                              <select value={secQuestion.type} onChange={e => setSecQuestion({ ...secQuestion, type: e.target.value, required: e.target.value === 'Header Text / Note' ? 'Optional' : secQuestion.required })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', flex: 1 }}>
+                                <option value="Text">Text (Short Answer)</option>
                                 <option value="Dropdown">Dropdown</option>
                                 <option value="Checkbox">Checkbox</option>
                                 <option value="File Upload">File Upload</option>
+                                <option value="Header Text / Note">Header Text / Note (Static Info)</option>
                               </select>
-                              <select value={secQuestion.required} onChange={e => setSecQuestion({ ...secQuestion, required: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', flex: 1 }}>
-                                <option value="Required">Required</option>
-                                <option value="Optional">Optional</option>
-                              </select>
+                              {secQuestion.type !== 'Header Text / Note' && (
+                                <select value={secQuestion.required} onChange={e => setSecQuestion({ ...secQuestion, required: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', flex: 1 }}>
+                                  <option value="Required">Required</option>
+                                  <option value="Optional">Optional</option>
+                                </select>
+                              )}
                             </div>
 
                             {(secQuestion.type === 'Checkbox' || secQuestion.type === 'Dropdown') && (
@@ -1218,18 +1233,31 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
 
                 {isAddingQuestion && (
                   <div style={{ border: '1px dashed #ccc', padding: '1rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <input type="text" placeholder="Type your question here" value={newQuestion.question} onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} />
+                    {newQuestion.type === 'Header Text / Note' ? (
+                      <textarea
+                        rows={3}
+                        placeholder="Type heading, instructions, or rules..."
+                        value={newQuestion.question}
+                        onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })}
+                        style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', fontFamily: 'inherit', resize: 'vertical' }}
+                      />
+                    ) : (
+                      <input type="text" placeholder="Type your question here" value={newQuestion.question} onChange={e => setNewQuestion({ ...newQuestion, question: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }} />
+                    )}
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                      <select value={newQuestion.type} onChange={e => setNewQuestion({ ...newQuestion, type: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}>
-                        <option value="Text">Text</option>
+                      <select value={newQuestion.type} onChange={e => setNewQuestion({ ...newQuestion, type: e.target.value, required: e.target.value === 'Header Text / Note' ? 'Optional' : newQuestion.required })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}>
+                        <option value="Text">Text (Short Answer)</option>
                         <option value="Dropdown">Dropdown</option>
                         <option value="Checkbox">Checkbox</option>
                         <option value="File Upload">File Upload</option>
+                        <option value="Header Text / Note">Header Text / Note (Static Info)</option>
                       </select>
-                      <select value={newQuestion.required} onChange={e => setNewQuestion({ ...newQuestion, required: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}>
-                        <option value="Required">Required</option>
-                        <option value="Optional">Optional</option>
-                      </select>
+                      {newQuestion.type !== 'Header Text / Note' && (
+                        <select value={newQuestion.required} onChange={e => setNewQuestion({ ...newQuestion, required: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ccc', flex: 1 }}>
+                          <option value="Required">Required</option>
+                          <option value="Optional">Optional</option>
+                        </select>
+                      )}
                     </div>
 
                     {(newQuestion.type === 'Checkbox' || newQuestion.type === 'Dropdown') && (
