@@ -115,6 +115,8 @@ export default function OrganizerDashboard() {
 
   const [capacity, setCapacity] = useState('');
   const [targetDepartment, setTargetDepartment] = useState('All');
+  const [visibility, setVisibility] = useState<'Public' | 'Unlisted' | 'Private'>('Public');
+
   const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -192,6 +194,9 @@ export default function OrganizerDashboard() {
     formData.append('generateQRCode', String(generateQRCode));
       formData.append('externalRegistrationLink', externalRegistrationLink.trim());
     formData.append('targetDepartment', targetDepartment);
+    formData.append('visibility', visibility);
+    formData.append('targetInitiativeMode', 'All Initiatives');
+    formData.append('targetClubMode', 'All Clubs');
     formData.append('rules', instructions);
     formData.append('image', imageFile);
 
@@ -222,6 +227,7 @@ export default function OrganizerDashboard() {
       setRegDeadlineDate('');
       setRegDeadlineTime('');
       setTargetDepartment('All');
+      setVisibility('Public');
       setLocation('');
       setTicketType('Free');
       setTicketPrice('');
@@ -1293,6 +1299,29 @@ export default function OrganizerDashboard() {
                       </motion.div>
                     )}
                   </AnimatePresence>
+                </div>
+
+                {/* Link-Only Private Event Toggle */}
+                <div style={{ background: '#eaeaea', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Users size={20} color={visibility === 'Unlisted' ? '#8B5CF6' : '#888'} />
+                    <div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#111' }}>
+                        Private Direct Link Only (Unlisted Event)
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '2px' }}>
+                        {visibility === 'Unlisted'
+                          ? 'ON: Hidden from Home Page & Portals. Accessible ONLY via direct URL link.'
+                          : 'OFF: Visible to normal users on Home Page & Portals as usual.'}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    onClick={() => setVisibility(visibility === 'Unlisted' ? 'Public' : 'Unlisted')}
+                    style={{ width: '44px', height: '24px', background: visibility === 'Unlisted' ? '#8B5CF6' : '#ccc', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: '0.2s', flexShrink: 0 }}
+                  >
+                    <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: visibility === 'Unlisted' ? '23px' : '3px', transition: '0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                  </div>
                 </div>
 
                 {/* Generate QR Code Toggle */}

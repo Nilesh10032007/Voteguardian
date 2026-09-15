@@ -119,7 +119,19 @@ const eventSubmissionSchema = new mongoose.Schema(
         required: { type: String, enum: ['Required', 'Optional', 'Off'], default: 'Optional' },
         options: [String]
       }]
-    }]
+    }],
+    targetInitiativeMode: {
+      type: String,
+      enum: ['All Initiatives', 'Selected Initiatives', 'No Initiative'],
+      default: 'All Initiatives'
+    },
+    targetInitiatives: [String],
+    targetClubMode: {
+      type: String,
+      enum: ['All Clubs', 'Selected Clubs', 'No Club'],
+      default: 'All Clubs'
+    },
+    targetClubs: [String]
   },
   { timestamps: true }
 );

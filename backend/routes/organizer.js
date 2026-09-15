@@ -211,7 +211,26 @@ router.post('/events', requireAuth, requireOrganizer, upload.single('image'), as
     }
 
     const { title, description, date, venue, category, price, seats, tag, startDate, endDate, registrationDeadline,
-      externalRegistrationLink, mode, location, capacity, rules } = req.body;
+      externalRegistrationLink, mode, location, capacity, rules, visibility,
+      targetInitiativeMode, targetInitiatives, targetClubMode, targetClubs } = req.body;
+
+    let parsedTargetInitiatives = [];
+    if (targetInitiatives) {
+      try {
+        parsedTargetInitiatives = typeof targetInitiatives === 'string' ? JSON.parse(targetInitiatives) : targetInitiatives;
+      } catch (e) {
+        parsedTargetInitiatives = Array.isArray(targetInitiatives) ? targetInitiatives : [targetInitiatives];
+      }
+    }
+
+    let parsedTargetClubs = [];
+    if (targetClubs) {
+      try {
+        parsedTargetClubs = typeof targetClubs === 'string' ? JSON.parse(targetClubs) : targetClubs;
+      } catch (e) {
+        parsedTargetClubs = Array.isArray(targetClubs) ? targetClubs : [targetClubs];
+      }
+    }
 
     if (!req.file) {
       return res.status(400).json({ message: 'Please upload an image for the event' });
@@ -239,11 +258,19 @@ router.post('/events', requireAuth, requireOrganizer, upload.single('image'), as
       seats: seats || 'Limited',
       tag: tag || '',
       rules: rules || '',
+      visibility: visibility || 'Public',
       createdBy: req.user.id,
-      clubId: club._id
+      clubId: club._id,
+      targetInitiativeMode: targetInitiativeMode || 'All Initiatives',
+      targetInitiatives: parsedTargetInitiatives,
+      targetClubMode: targetClubMode || 'All Clubs',
+      targetClubs: parsedTargetClubs
     });
 
     const savedEvent = await event.save();
+
+    const eventsRoutes = require('./events');
+    if (eventsRoutes.clearEventsCache) eventsRoutes.clearEventsCache();
 
     // Optionally increment eventsConducted if numeric
     if (typeof club.eventsConducted === 'number') {

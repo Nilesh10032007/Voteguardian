@@ -72,6 +72,15 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
   const [isEditingDept, setIsEditingDept] = useState(false);
   const [targetDepartment, setTargetDepartment] = useState(event?.targetDepartment || 'All');
 
+  const [visibility, setVisibility] = useState<'Public' | 'Unlisted' | 'Private'>(event?.visibility || 'Public');
+  const [isSavingTargetVis, setIsSavingTargetVis] = useState(false);
+
+  useEffect(() => {
+    if (event) {
+      if (event.visibility) setVisibility(event.visibility);
+    }
+  }, [event]);
+
   const [timeline, setTimeline] = useState<any[]>(event?.timeline?.length > 0 ? event.timeline : []);
   const [showAddTimeline, setShowAddTimeline] = useState(false);
   const [newTimeline, setNewTimeline] = useState({ title: '', desc: '', start: '', end: '' });
@@ -597,6 +606,85 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
             style={{ fontSize: '0.9rem', color: '#555', lineHeight: 1.6 }}
             dangerouslySetInnerHTML={{ __html: rules || 'No rules provided.' }}
           />
+        )}
+      </div>
+
+      {/* Target Visibility Settings Card */}      {/* Event Visibility Settings Card */}
+      <div className="card-container" style={{ background: '#fff', border: '1px solid #eaeaea', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#111' }}>Event Visibility Settings</h3>
+            <p style={{ fontSize: '0.8rem', color: '#666', margin: '4px 0 0 0' }}>Control whether this event is public or link-only</p>
+          </div>
+          <button
+            onClick={async () => {
+              setIsSavingTargetVis(true);
+              const success = await saveEvent({
+                visibility
+              });
+              setIsSavingTargetVis(false);
+              if (success) {
+                alert('Visibility settings saved successfully!');
+              }
+            }}
+            disabled={isSavingTargetVis}
+            style={{
+              background: isSavingTargetVis ? '#555' : '#111',
+              color: '#fff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              cursor: isSavingTargetVis ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <Check size={14} /> {isSavingTargetVis ? 'Saving...' : 'Save Visibility Settings'}
+          </button>
+        </div>
+
+        {/* Toggle Switch */}
+        <div style={{ background: '#fafafa', border: '1px solid #eaeaea', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Users size={20} color={visibility === 'Unlisted' ? '#8B5CF6' : '#888'} />
+            <div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#111' }}>
+                Private Direct Link Only (Unlisted Event)
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '2px' }}>
+                {visibility === 'Unlisted'
+                  ? 'ON: Hidden from Home Page & Portals. Accessible ONLY via direct URL link.'
+                  : 'OFF: Visible to normal users on Home Page & Portals as usual.'}
+              </div>
+            </div>
+          </div>
+          <div
+            onClick={() => setVisibility(visibility === 'Unlisted' ? 'Public' : 'Unlisted')}
+            style={{ width: '44px', height: '24px', background: visibility === 'Unlisted' ? '#8B5CF6' : '#ccc', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: '0.2s', flexShrink: 0 }}
+          >
+            <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: visibility === 'Unlisted' ? '23px' : '3px', transition: '0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+          </div>
+        </div>
+
+        {visibility === 'Unlisted' && (
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+            <div style={{ fontSize: '0.825rem', color: '#1e40af' }}>
+              <strong>🔗 Direct Link Access Enabled:</strong> Anyone with the event URL can view details and register for this event.
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const link = `${window.location.origin}/#event-detail-${event?._id || event?.id}`;
+                navigator.clipboard.writeText(link);
+                alert('Direct Event URL copied to clipboard!\n\n' + link);
+              }}
+            >
+              Copy Event URL
+            </button>
+          </div>
         )}
       </div>
 
