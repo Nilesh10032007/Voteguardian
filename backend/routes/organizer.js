@@ -211,8 +211,53 @@ router.post('/events', requireAuth, requireOrganizer, upload.single('image'), as
     }
 
     const { title, description, date, venue, category, price, seats, tag, startDate, endDate, registrationDeadline,
-      externalRegistrationLink, mode, location, capacity, rules, visibility,
+      externalRegistrationLink, mode, location, capacity, rules, visibility, allowMultipleRegistrations, formMode, formSections,
       targetInitiativeMode, targetInitiatives, targetClubMode, targetClubs } = req.body;
+
+    const cleanFormSections = (sections) => {
+      if (!sections) return sections;
+      let parsed = sections;
+      if (typeof parsed === 'string') {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e1) {
+          try {
+            parsed = new Function(`return ${parsed}`)();
+          } catch (e2) {}
+        }
+      }
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed.map(sec => {
+        if (!sec || typeof sec !== 'object') return sec;
+        const questions = Array.isArray(sec.questions) ? sec.questions.map(q => {
+          if (!q || typeof q !== 'object') return q;
+          let opts = q.options;
+          if (typeof opts === 'string') {
+            opts = opts.trim();
+            try {
+              opts = JSON.parse(opts);
+            } catch (e1) {
+              try {
+                opts = new Function(`return ${opts}`)();
+              } catch (e2) {}
+            }
+          }
+          if (!Array.isArray(opts)) {
+            opts = opts !== undefined && opts !== null ? [opts] : [];
+          }
+          return {
+            ...q,
+            options: opts
+          };
+        }) : [];
+
+        return {
+          ...sec,
+          questions
+        };
+      });
+    };
 
     let parsedTargetInitiatives = [];
     if (targetInitiatives) {
@@ -259,6 +304,9 @@ router.post('/events', requireAuth, requireOrganizer, upload.single('image'), as
       tag: tag || '',
       rules: rules || '',
       visibility: visibility || 'Public',
+      allowMultipleRegistrations: allowMultipleRegistrations === true || allowMultipleRegistrations === 'true',
+      formMode: formMode || 'builtin',
+      formSections: cleanFormSections(formSections),
       createdBy: req.user.id,
       clubId: club._id,
       targetInitiativeMode: targetInitiativeMode || 'All Initiatives',

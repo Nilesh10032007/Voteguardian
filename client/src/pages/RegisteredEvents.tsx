@@ -282,8 +282,13 @@ export default function RegisteredEvents() {
                       
                       {/* Card Content (Left) */}
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem 0', color: '#111827' }}>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.25rem 0', color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {ev.title || 'Event Title'}
+                          {ev.passLabel && (
+                            <span style={{ fontSize: '0.75rem', background: '#F3E8FF', color: '#7E22CE', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                              {ev.passLabel}
+                            </span>
+                          )}
                         </h3>
                         <p style={{ color: '#6b7280', margin: '0 0 1.5rem 0', fontSize: '0.95rem' }}>
                           Organized by <span style={{ fontWeight: 600, color: '#374151' }}>{ev.organizer?.name || ev.organizer || 'Unknown'}</span>
@@ -421,7 +426,9 @@ export default function RegisteredEvents() {
                 <X size={18} color="#4b5563" />
               </button>
 
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111', margin: '0 0 0.5rem 0' }}>{selectedTicket.qrToken ? 'Digital Ticket' : 'Entry Pass'}</h2>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111', margin: '0 0 0.5rem 0' }}>
+                {selectedTicket.qrToken ? 'Digital Ticket' : 'Entry Pass'} {selectedTicket.passLabel ? `(${selectedTicket.passLabel})` : ''}
+              </h2>
               <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '2rem' }}>{selectedTicket.title}</p>
 
               {selectedTicket.qrToken ? (

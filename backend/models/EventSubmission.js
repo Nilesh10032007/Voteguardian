@@ -75,6 +75,7 @@ const eventSubmissionSchema = new mongoose.Schema(
       amount: String
     }],
     visibility: { type: String, default: 'Public' },
+    allowMultipleRegistrations: { type: Boolean, default: false },
     registrationDeadline: { type: String, default: '' },
     externalRegistrationLink: { type: String, default: '' },
     generateQRCode: { type: Boolean, default: false },
@@ -108,18 +109,7 @@ const eventSubmissionSchema = new mongoose.Schema(
       enum: ['builtin', 'external', 'multipage'],
       default: 'builtin'
     },
-    formSections: [{
-      id: String,
-      title: String,
-      description: String,
-      questions: [{
-        id: String,
-        question: String,
-        type: { type: String, default: 'Text' },
-        required: { type: String, default: 'Optional' },
-        options: [mongoose.Schema.Types.Mixed]
-      }]
-    }],
+    formSections: [mongoose.Schema.Types.Mixed],
     targetInitiativeMode: {
       type: String,
       enum: ['All Initiatives', 'Selected Initiatives', 'No Initiative'],

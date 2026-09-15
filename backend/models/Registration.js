@@ -67,7 +67,7 @@ const registrationSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-// Prevent multiple active registrations for the same user and event
-registrationSchema.index({ user: 1, event: 1 }, { unique: true });
+// Index for fast query of user registrations
+registrationSchema.index({ user: 1, event: 1 });
 
 module.exports = mongoose.model('Registration', registrationSchema);
