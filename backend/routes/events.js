@@ -34,6 +34,12 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
 let approvedCache = { data: null, timestamp: 0 };
 const APPROVED_CACHE_TTL = 10000; // 10 seconds RAM cache
 
+const clearEventsCache = () => {
+  approvedCache = { data: null, timestamp: 0 };
+  publicEventsCache = { data: null, timestamp: 0 };
+};
+router.clearEventsCache = clearEventsCache;
+
 router.get('/approved', softAuth, async (req, res) => {
   try {
     const now = Date.now();
@@ -41,7 +47,7 @@ router.get('/approved', softAuth, async (req, res) => {
       return res.json(approvedCache.data);
     }
 
-    const list = await EventSubmission.find({
+    const rawList = await EventSubmission.find({
       status: 'approved',
       withdrawalStatus: { $ne: 'approved' },
       visibility: { $nin: ['Private', 'Unlisted'] }
@@ -49,6 +55,13 @@ router.get('/approved', softAuth, async (req, res) => {
       .populate('organizer', 'name')
       .sort({ createdAt: -1 })
       .lean();
+
+    // Only show on general feed if target is All Initiatives & All Clubs
+    const list = rawList.filter(e => {
+      const initMode = e.targetInitiativeMode || 'All Initiatives';
+      const clubMode = e.targetClubMode || 'All Clubs';
+      return initMode === 'All Initiatives' && clubMode === 'All Clubs';
+    });
 
     // Fetch all pricing details in one query
     const eventIds = list.map(e => e._id);
@@ -172,6 +185,15 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
       (s.organizer && s.organizer.toString() === req.user._id.toString()) ||
       (s.organizer && req.user.name && s.organizer.toString().toLowerCase() === req.user.name.toLowerCase());
 
+    if (!isOwner && req.user.role === 'organizer') {
+      const Club = require('../models/Club');
+      const userClub = await Club.findOne({ organizerAccount: req.user._id });
+      if (userClub) {
+        if (s.clubId && s.clubId.toString() === userClub._id.toString()) isOwner = true;
+        if (s.organizer && s.organizer.toString().toLowerCase() === userClub.name.toLowerCase()) isOwner = true;
+      }
+    }
+
     if (!isOwner && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden: You can only edit your own events' });
     }
@@ -180,7 +202,8 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
       title, description, startDate, endDate, mode, location, capacity, imageUrl,
       participantType, teamMin, teamMax, eligibility, timeline, additionalDocs, rules, contacts, announcements, customQuestions,
       tickets, prizes, visibility, registrationControl, personalInfo, eduInfo, organizingTeam, registrationDeadline,
-      generateQRCode, targetDepartment, registrationStatus, externalRegistrationLink, formMode, formSections
+      generateQRCode, targetDepartment, registrationStatus, externalRegistrationLink, formMode, formSections,
+      targetInitiativeMode, targetInitiatives, targetClubMode, targetClubs
     } = req.body;
 
     if (formMode !== undefined) s.formMode = formMode;
@@ -263,8 +286,13 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
     if (registrationDeadline !== undefined) s.registrationDeadline = registrationDeadline;
     if (generateQRCode !== undefined) s.generateQRCode = generateQRCode === true || generateQRCode === 'true';
     if (targetDepartment !== undefined) s.targetDepartment = targetDepartment;
+    if (targetInitiativeMode !== undefined) s.targetInitiativeMode = targetInitiativeMode;
+    if (targetInitiatives !== undefined) s.targetInitiatives = safeParseArray(targetInitiatives);
+    if (targetClubMode !== undefined) s.targetClubMode = targetClubMode;
+    if (targetClubs !== undefined) s.targetClubs = safeParseArray(targetClubs);
 
     await s.save();
+    clearEventsCache();
     res.json({ submission: s });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -301,6 +329,7 @@ router.delete('/submission/:id', requireAuth, async (req, res) => {
       await EventSubmission.findByIdAndDelete(req.params.id);
     }
 
+    clearEventsCache();
     res.json({ message: 'Event successfully deleted.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -313,6 +342,7 @@ router.patch('/:id/approve', requireAuth, requireAdmin, async (req, res) => {
     if (!s) return res.status(404).json({ message: 'Not found' });
     s.status = 'approved';
     await s.save();
+    clearEventsCache();
     res.json({ submission: s });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -325,6 +355,7 @@ router.patch('/:id/reject', requireAuth, requireAdmin, async (req, res) => {
     if (!s) return res.status(404).json({ message: 'Not found' });
     s.status = 'rejected';
     await s.save();
+    clearEventsCache();
     res.json({ submission: s });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -460,8 +491,18 @@ router.get('/', softAuth, async (req, res) => {
       return res.json(publicEventsCache.data);
     }
 
-    const events = await Event.find({ visibility: { $nin: ['Private', 'Unlisted'] } }).sort({ date: 1 }).lean();
-    const clubsEvents = await ClubsEvent.find({ visibility: { $nin: ['Private', 'Unlisted'] } }).sort({ createdAt: -1 }).lean();
+    const rawEvents = await Event.find({ visibility: { $nin: ['Private', 'Unlisted'] } }).sort({ date: 1 }).lean();
+    const events = rawEvents.filter(e => {
+      const initMode = e.targetInitiativeMode || 'All Initiatives';
+      const clubMode = e.targetClubMode || 'All Clubs';
+      return initMode === 'All Initiatives' && clubMode === 'All Clubs';
+    });
+    const rawClubsEvents = await ClubsEvent.find({ visibility: { $nin: ['Private', 'Unlisted'] } }).sort({ createdAt: -1 }).lean();
+    const clubsEvents = rawClubsEvents.filter(e => {
+      const initMode = e.targetInitiativeMode || 'All Initiatives';
+      const clubMode = e.targetClubMode || 'All Clubs';
+      return initMode === 'All Initiatives' && clubMode === 'All Clubs';
+    });
 
     // Fetch all pricing details in one query
     const allEventIds = [...events.map(e => e._id), ...clubsEvents.map(e => e._id)];
@@ -695,12 +736,99 @@ router.post('/scan-public', async (req, res) => {
 // @route   GET /api/events/club/:id
 router.get('/club/:id', async (req, res) => {
   try {
+    const mongoose = require('mongoose');
     const Club = require('../models/Club');
-    const club = await Club.findOne({ id: req.params.id });
+    const param = req.params.id;
+
+    let club = await Club.findOne({ id: param });
+    if (!club && mongoose.Types.ObjectId.isValid(param)) {
+      club = await Club.findById(param);
+    }
+    if (!club) {
+      const cleanName = param.replace(/-/g, ' ');
+      club = await Club.findOne({ name: new RegExp(cleanName, 'i') });
+    }
     if (!club) {
       return res.status(404).json({ message: 'Club not found' });
     }
-    const events = await ClubsEvent.find({ clubId: club._id, visibility: { $nin: ['Private', 'Unlisted'] } }).sort({ createdAt: -1 }).lean();
+
+    const isInitiativeCheck = (c) => {
+      if (!c) return false;
+      const typeStr = (c.type || '').toLowerCase();
+      if (typeStr === 'initiative' || typeStr === 'centre' || typeStr === 'center') return true;
+      const nameStr = (c.name || '').toLowerCase();
+      const idStr = (c.id || '').toLowerCase();
+      const keywords = ['initiative', 'center', 'centre', 'jic', 'incubation', 'cell', 'outreach', 'makerspace', 'mpower', 'zarurat', 'nss', 'upscale'];
+      return keywords.some(k => nameStr.includes(k) || idStr.includes(k));
+    };
+
+    const isInitiative = isInitiativeCheck(club);
+    const clubIdStr = club._id.toString();
+    const clubCustomId = club.id || '';
+    const clubName = club.name || '';
+
+    let targetQuery = [];
+    if (isInitiative) {
+      targetQuery = [
+        { clubId: club._id },
+        { targetInitiativeMode: 'All Initiatives' },
+        { targetInitiativeMode: { $exists: false } },
+        { targetInitiatives: { $in: [clubIdStr, clubCustomId, clubName] } }
+      ];
+    } else {
+      targetQuery = [
+        { clubId: club._id },
+        { targetClubMode: 'All Clubs' },
+        { targetClubMode: { $exists: false } },
+        { targetClubs: { $in: [clubIdStr, clubCustomId, clubName] } }
+      ];
+    }
+
+    const rawClubsEvents = await ClubsEvent.find({
+      $or: targetQuery,
+      visibility: { $nin: ['Private', 'Unlisted'] }
+    }).sort({ createdAt: -1 }).lean();
+
+    const rawSubmissions = await EventSubmission.find({
+      status: 'approved',
+      withdrawalStatus: { $ne: 'approved' },
+      $or: targetQuery,
+      visibility: { $nin: ['Private', 'Unlisted'] }
+    }).sort({ createdAt: -1 }).lean();
+
+    const rawAdminEvents = await Event.find({
+      $or: targetQuery,
+      visibility: { $nin: ['Private', 'Unlisted'] }
+    }).sort({ date: 1 }).lean();
+
+    const rawEvents = [...rawClubsEvents, ...rawSubmissions, ...rawAdminEvents];
+
+    const events = rawEvents.filter(e => {
+      // Always allow an event to show on the portal of the Club/Initiative that created/owns it
+      const isOwnerClub = (e.clubId && e.clubId.toString() === clubIdStr) ||
+        (e.organizer && clubName && e.organizer.toString().toLowerCase() === clubName.toLowerCase());
+      if (isOwnerClub) return true;
+
+      if (isInitiative) {
+        const mode = e.targetInitiativeMode || 'All Initiatives';
+        if (mode === 'No Initiative') return false;
+        if (mode === 'Selected Initiatives') {
+          const targets = Array.isArray(e.targetInitiatives) ? e.targetInitiatives : [];
+          const matches = targets.some(t => t === clubIdStr || t === clubCustomId || t === clubName);
+          if (!matches) return false;
+        }
+        return true;
+      } else {
+        const mode = e.targetClubMode || 'All Clubs';
+        if (mode === 'No Club') return false;
+        if (mode === 'Selected Clubs') {
+          const targets = Array.isArray(e.targetClubs) ? e.targetClubs : [];
+          const matches = targets.some(t => t === clubIdStr || t === clubCustomId || t === clubName);
+          if (!matches) return false;
+        }
+        return true;
+      }
+    });
 
     const eventIds = events.map(e => e._id);
     const pricingDetails = await PaidEventDetail.find({ event: { $in: eventIds } }).lean();

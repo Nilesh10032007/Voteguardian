@@ -173,6 +173,18 @@ const eventSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  targetInitiativeMode: {
+    type: String,
+    enum: ['All Initiatives', 'Selected Initiatives', 'No Initiative'],
+    default: 'All Initiatives'
+  },
+  targetInitiatives: [String],
+  targetClubMode: {
+    type: String,
+    enum: ['All Clubs', 'Selected Clubs', 'No Club'],
+    default: 'All Clubs'
+  },
+  targetClubs: [String],
   createdAt: {
     type: Date,
     default: Date.now
