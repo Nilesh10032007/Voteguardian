@@ -771,6 +771,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
   ]);
   const [activeSectionIdx, setActiveSectionIdx] = useState<number | null>(null);
   const [secQuestion, setSecQuestion] = useState<any>({ question: '', type: 'Text', required: 'Optional', options: [] });
+  const [editingQuestionIdx, setEditingQuestionIdx] = useState<number | null>(null);
 
   const [customQuestions, setCustomQuestions] = useState<any[]>(event?.customQuestions?.length > 0 ? event.customQuestions : []);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
@@ -1104,16 +1105,28 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                                 Type: <b>{q.type}</b>{q.type !== 'Header Text / Note' && <> | <b>{q.required}</b></>}
                               </div>
                             </div>
-                            <Trash2
-                              size={16}
-                              color="#EF4444"
-                              style={{ cursor: 'pointer' }}
-                              onClick={() => {
-                                const updated = [...formSections];
-                                updated[sIdx].questions = updated[sIdx].questions.filter((_: any, idx: number) => idx !== qIdx);
-                                setFormSections(updated);
-                              }}
-                            />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <Edit2
+                                size={16}
+                                color="#3b82f6"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => {
+                                  setActiveSectionIdx(sIdx);
+                                  setEditingQuestionIdx(qIdx);
+                                  setSecQuestion({ ...q });
+                                }}
+                              />
+                              <Trash2
+                                size={16}
+                                color="#EF4444"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => {
+                                  const updated = [...formSections];
+                                  updated[sIdx].questions = updated[sIdx].questions.filter((_: any, idx: number) => idx !== qIdx);
+                                  setFormSections(updated);
+                                }}
+                              />
+                            </div>
                           </div>
                         ))}
 
@@ -1177,16 +1190,21 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                             )}
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                              <button onClick={() => setActiveSectionIdx(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                              <button onClick={() => { setActiveSectionIdx(null); setEditingQuestionIdx(null); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
                               <button onClick={() => {
                                 if (secQuestion.question) {
                                   const updated = [...formSections];
-                                  updated[sIdx].questions = [...(updated[sIdx].questions || []), { id: String(Date.now()), ...secQuestion }];
+                                  if (editingQuestionIdx !== null) {
+                                    updated[sIdx].questions[editingQuestionIdx] = { ...secQuestion };
+                                  } else {
+                                    updated[sIdx].questions = [...(updated[sIdx].questions || []), { id: String(Date.now()), ...secQuestion }];
+                                  }
                                   setFormSections(updated);
                                   setSecQuestion({ question: '', type: 'Text', required: 'Optional', options: [] });
                                   setActiveSectionIdx(null);
+                                  setEditingQuestionIdx(null);
                                 }
-                              }} style={{ background: '#0f172a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Save Question</button>
+                              }} style={{ background: '#0f172a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>{editingQuestionIdx !== null ? 'Update Question' : 'Save Question'}</button>
                             </div>
                           </div>
                         ) : (
@@ -1194,6 +1212,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                             type="button"
                             onClick={() => {
                               setActiveSectionIdx(sIdx);
+                              setEditingQuestionIdx(null);
                               setSecQuestion({ question: '', type: 'Text', required: 'Optional', options: [] });
                             }}
                             style={{ background: '#f1f5f9', color: '#334155', border: '1px dashed #cbd5e1', padding: '8px 12px', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}
