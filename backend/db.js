@@ -9,6 +9,14 @@ const connectDB = async () => {
 
     const conn = await mongoose.connect(mongoUri);
     console.log(`\x1b[32m✔ MongoDB Connected: ${conn.connection.host}\x1b[0m`);
+
+    // Safely drop legacy unique index if present
+    try {
+      await mongoose.connection.collection('registrations').dropIndex('user_1_event_1');
+    } catch (e) {}
+    try {
+      await mongoose.connection.collection('paidregistrations').dropIndex('user_1_event_1');
+    } catch (e) {}
   } catch (error) {
     console.error(`\x1b[31m✘ Error connecting to MongoDB: ${error.message}\x1b[0m`);
     

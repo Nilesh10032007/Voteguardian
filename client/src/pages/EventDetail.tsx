@@ -59,7 +59,8 @@ const EventDetail = ({ hash }: { hash?: string }) => {
           organizer: data.organizer?.name || data.organizer || 'Host',
           price: data.pricing?.isPaid ? `₹${data.pricing.ticketPrice}` : (data.price || 'Free'),
           seats: data.pricing?.ticketCapacity || data.capacity || data.seats || 'Limited',
-          isRegistered: data.isRegistered,
+          isRegistered: (data.allowMultipleRegistrations || data.allowMultipleRegistrations === 'true') ? false : data.isRegistered,
+          allowMultipleRegistrations: data.allowMultipleRegistrations,
           startDate: data.startDate,
           endDate: data.endDate,
           mode: data.mode,
@@ -560,22 +561,23 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                         return;
                       }
 
-                      if (!currentEvent.isRegistered) setShowRegister(true);
+                      const isUserRegistered = currentEvent.isRegistered && !rawEvent?.allowMultipleRegistrations && !currentEvent?.allowMultipleRegistrations;
+                      if (!isUserRegistered) setShowRegister(true);
                     }}
                     style={{
-                      background: isNotStarted ? '#94a3b8' : (isClosed ? '#ef4444' : (currentEvent.isRegistered ? '#10b981' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? '#94a3b8' : '#0f172a'))),
+                      background: isNotStarted ? '#94a3b8' : (isClosed ? '#ef4444' : (currentEvent.isRegistered && !rawEvent?.allowMultipleRegistrations && !currentEvent?.allowMultipleRegistrations ? '#10b981' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? '#94a3b8' : '#0f172a'))),
                       color: '#fff',
                       border: 'none',
                       borderRadius: '8px',
                       padding: '1rem 3rem',
                       fontSize: '1.1rem',
                       fontWeight: 700,
-                      cursor: (isClosed || isNotStarted) ? 'not-allowed' : (currentEvent.isRegistered ? 'default' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? 'not-allowed' : 'pointer')),
+                      cursor: (isClosed || isNotStarted) ? 'not-allowed' : (currentEvent.isRegistered && !rawEvent?.allowMultipleRegistrations && !currentEvent?.allowMultipleRegistrations ? 'default' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? 'not-allowed' : 'pointer')),
                       transition: 'background 0.2s',
                       boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
                     }}
                   >
-                    {isNotStarted ? 'Coming Soon' : (isClosed ? 'Registration Closed' : (currentEvent.isRegistered ? 'Registered' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? 'Not Eligible' : 'Register Now')))}
+                    {isNotStarted ? 'Coming Soon' : (isClosed ? 'Registration Closed' : (currentEvent.isRegistered && !rawEvent?.allowMultipleRegistrations && !currentEvent?.allowMultipleRegistrations ? 'Registered' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? 'Not Eligible' : 'Register Now')))}
                   </button>
                 </div>
                 <div style={{ textAlign: 'center', fontSize: '0.9rem', color: '#94a3b8', marginTop: '2rem' }}>

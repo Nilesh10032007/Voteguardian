@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
-import { LayoutGrid, Plus, Bell, Search, Image as ImageIcon, MapPin, ChevronDown, CheckCircle, Users, Trophy, Edit2, Check, Trash2, Download, Link as LinkIcon, Send, User, Mail, Phone, Calendar, X, Menu, FileText } from 'lucide-react';
+import { LayoutGrid, Plus, Bell, Search, Image as ImageIcon, MapPin, ChevronDown, CheckCircle, Users, Trophy, Edit2, Check, Trash2, Download, Link as LinkIcon, Send, User, Mail, Phone, Calendar, X, Menu, FileText, Repeat } from 'lucide-react';
 import darkLogo from '../logo/dark logo.png';
 import Footer from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -73,11 +73,13 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
   const [targetDepartment, setTargetDepartment] = useState(event?.targetDepartment || 'All');
 
   const [visibility, setVisibility] = useState<'Public' | 'Unlisted' | 'Private'>(event?.visibility || 'Public');
+  const [allowMultipleRegistrations, setAllowMultipleRegistrations] = useState<boolean>(event?.allowMultipleRegistrations || false);
   const [isSavingTargetVis, setIsSavingTargetVis] = useState(false);
 
   useEffect(() => {
     if (event) {
       if (event.visibility) setVisibility(event.visibility);
+      if (event.allowMultipleRegistrations !== undefined) setAllowMultipleRegistrations(!!event.allowMultipleRegistrations);
     }
   }, [event]);
 
@@ -620,11 +622,12 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
             onClick={async () => {
               setIsSavingTargetVis(true);
               const success = await saveEvent({
-                visibility
+                visibility,
+                allowMultipleRegistrations
               });
               setIsSavingTargetVis(false);
               if (success) {
-                alert('Visibility settings saved successfully!');
+                alert('Visibility & Registration settings saved successfully!');
               }
             }}
             disabled={isSavingTargetVis}
@@ -666,6 +669,29 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
             style={{ width: '44px', height: '24px', background: visibility === 'Unlisted' ? '#8B5CF6' : '#ccc', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: '0.2s', flexShrink: 0 }}
           >
             <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: visibility === 'Unlisted' ? '23px' : '3px', transition: '0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+          </div>
+        </div>
+
+        {/* Multiple Registrations Toggle Switch */}
+        <div style={{ background: '#fafafa', border: '1px solid #eaeaea', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Repeat size={20} color={allowMultipleRegistrations ? '#8B5CF6' : '#888'} />
+            <div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#111' }}>
+                Allow Multiple Registrations per User
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '2px' }}>
+                {allowMultipleRegistrations
+                  ? 'ON: Single user can register multiple times for this event.'
+                  : 'OFF: Default restriction. Users can register only once.'}
+              </div>
+            </div>
+          </div>
+          <div
+            onClick={() => setAllowMultipleRegistrations(!allowMultipleRegistrations)}
+            style={{ width: '44px', height: '24px', background: allowMultipleRegistrations ? '#8B5CF6' : '#ccc', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: '0.2s', flexShrink: 0 }}
+          >
+            <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: allowMultipleRegistrations ? '23px' : '3px', transition: '0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
           </div>
         </div>
 
@@ -1492,6 +1518,44 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
   );
 }
 
+const UserAvatar = ({ name, avatar, size = 36 }: { name?: string; avatar?: string; size?: number }) => {
+  const [imgError, setImgError] = useState(false);
+  const displayName = name || 'Participant';
+  const initial = displayName.trim().charAt(0).toUpperCase() || 'P';
+
+  if (avatar && !imgError) {
+    return (
+      <img
+        src={avatar}
+        alt={displayName}
+        onError={() => setImgError(true)}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
+      />
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+        color: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 700,
+        fontSize: size * 0.4,
+        flexShrink: 0,
+        boxShadow: '0 2px 8px rgba(139, 92, 246, 0.25)'
+      }}
+    >
+      {initial}
+    </div>
+  );
+};
+
 // -------------------------------------------------------------
 // PARTICIPANTS TAB
 // -------------------------------------------------------------
@@ -1746,12 +1810,12 @@ function ParticipantsTab({ event }: { event: any }) {
                 
                 return (
                 <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '12px 1rem', borderRadius: '8px', border: '1px solid #eaeaea', flexWrap: 'wrap', gap: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '200px' }}>
-                    <img src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${dn}`} alt="" style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid #ccc' }} />
-                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{dn}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '220px' }}>
+                    <UserAvatar name={p.name} avatar={p.avatar} size={36} />
+                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{p.name || 'Participant'}</span>
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: '#666', minWidth: '150px' }}>{de}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#666' }}>{dp || 'N/A'}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#666', minWidth: '150px' }}>{p.email || '-'}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#666' }}>{p.phone || '-'}</div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: 'auto' }}>
                     <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#22c55e' }}>{p.status}</span>
@@ -1791,11 +1855,11 @@ function ParticipantsTab({ event }: { event: any }) {
                   <div key={p.id || i} style={{ background: '#fff', border: '1px solid #eaeaea', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img src={p.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${dn}`} alt="" style={{ width: 48, height: 48, borderRadius: '50%', border: '1px solid #eaeaea' }} />
+                        <UserAvatar name={p.name} avatar={p.avatar} size={48} />
                         <div>
-                          <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: '6px' }}>{dn} {p.isTeam && <span style={{ fontSize: '0.75rem', background: '#FEF3C7', color: '#D97706', padding: '2px 6px', borderRadius: '4px' }}>👑 Leader</span>}</h4>
-                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '2px' }}>{de}</div>
-                          {dp && <div style={{ fontSize: '0.8rem', color: '#666' }}>{dp}</div>}
+                          <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: '6px' }}>{p.name || 'Participant'} {p.isTeam && <span style={{ fontSize: '0.75rem', background: '#FEF3C7', color: '#D97706', padding: '2px 6px', borderRadius: '4px' }}>👑 Leader</span>}</h4>
+                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '2px' }}>{p.email || '-'}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#666' }}>{p.phone || '-'}</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>

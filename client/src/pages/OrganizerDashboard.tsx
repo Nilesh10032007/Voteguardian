@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Bell, Plus, LayoutGrid, Image as ImageIcon, MapPin, Ticket, Users, ChevronDown, X, Menu, User, Lock, UserCircle, LogOut, Send } from 'lucide-react';
+import { Search, Bell, Plus, LayoutGrid, Image as ImageIcon, MapPin, Ticket, Users, ChevronDown, X, Menu, User, Lock, UserCircle, LogOut, Send, Repeat } from 'lucide-react';
 import darkLogo from '../logo/dark logo.png';
 import Footer from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -116,6 +116,7 @@ export default function OrganizerDashboard() {
   const [capacity, setCapacity] = useState('');
   const [targetDepartment, setTargetDepartment] = useState('All');
   const [visibility, setVisibility] = useState<'Public' | 'Unlisted' | 'Private'>('Public');
+  const [allowMultipleRegistrations, setAllowMultipleRegistrations] = useState<boolean>(false);
 
   const [isDeptDropdownOpen, setIsDeptDropdownOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -195,6 +196,7 @@ export default function OrganizerDashboard() {
       formData.append('externalRegistrationLink', externalRegistrationLink.trim());
     formData.append('targetDepartment', targetDepartment);
     formData.append('visibility', visibility);
+    formData.append('allowMultipleRegistrations', String(allowMultipleRegistrations));
     formData.append('targetInitiativeMode', 'All Initiatives');
     formData.append('targetClubMode', 'All Clubs');
     formData.append('rules', instructions);
@@ -1321,6 +1323,29 @@ export default function OrganizerDashboard() {
                     style={{ width: '44px', height: '24px', background: visibility === 'Unlisted' ? '#8B5CF6' : '#ccc', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: '0.2s', flexShrink: 0 }}
                   >
                     <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: visibility === 'Unlisted' ? '23px' : '3px', transition: '0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+                  </div>
+                </div>
+
+                {/* Allow Multiple Registrations per User Toggle */}
+                <div style={{ background: '#eaeaea', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Repeat size={20} color={allowMultipleRegistrations ? '#8B5CF6' : '#888'} />
+                    <div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#111' }}>
+                        Allow Multiple Registrations per User
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '2px' }}>
+                        {allowMultipleRegistrations
+                          ? 'ON: Users can register multiple times. Each submission generates a new ticket.'
+                          : 'OFF: Default behaviour. Users can only register once.'}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    onClick={() => setAllowMultipleRegistrations(!allowMultipleRegistrations)}
+                    style={{ width: '44px', height: '24px', background: allowMultipleRegistrations ? '#8B5CF6' : '#ccc', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: '0.2s', flexShrink: 0 }}
+                  >
+                    <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: allowMultipleRegistrations ? '23px' : '3px', transition: '0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
                   </div>
                 </div>
 

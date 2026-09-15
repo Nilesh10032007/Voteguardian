@@ -74,7 +74,7 @@ router.get('/approved', softAuth, async (req, res) => {
 
     // Attach pricing details and check registration for each approved submission
     const listWithPricing = list.map((event) => {
-      const isRegistered = req.user ? event.registeredUsers?.some(id => id.toString() === req.user._id.toString()) : false;
+      const isRegistered = event.allowMultipleRegistrations ? false : (req.user ? event.registeredUsers?.some(id => id.toString() === req.user._id.toString()) : false);
       return { ...event, pricing: pricingMap[event._id.toString()], isRegistered };
     });
 
@@ -201,18 +201,59 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
     const {
       title, description, startDate, endDate, mode, location, capacity, imageUrl,
       participantType, teamMin, teamMax, eligibility, timeline, additionalDocs, rules, contacts, announcements, customQuestions,
-      tickets, prizes, visibility, registrationControl, personalInfo, eduInfo, organizingTeam, registrationDeadline,
+      tickets, prizes, visibility, allowMultipleRegistrations, registrationControl, personalInfo, eduInfo, organizingTeam, registrationDeadline,
       generateQRCode, targetDepartment, registrationStatus, externalRegistrationLink, formMode, formSections,
       targetInitiativeMode, targetInitiatives, targetClubMode, targetClubs
     } = req.body;
 
+    const cleanFormSections = (sections) => {
+      if (!sections) return sections;
+      let parsed = sections;
+      if (typeof parsed === 'string') {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e1) {
+          try {
+            parsed = new Function(`return ${parsed}`)();
+          } catch (e2) {}
+        }
+      }
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed.map(sec => {
+        if (!sec || typeof sec !== 'object') return sec;
+        const questions = Array.isArray(sec.questions) ? sec.questions.map(q => {
+          if (!q || typeof q !== 'object') return q;
+          let opts = q.options;
+          if (typeof opts === 'string') {
+            opts = opts.trim();
+            try {
+              opts = JSON.parse(opts);
+            } catch (e1) {
+              try {
+                opts = new Function(`return ${opts}`)();
+              } catch (e2) {}
+            }
+          }
+          if (!Array.isArray(opts)) {
+            opts = opts !== undefined && opts !== null ? [opts] : [];
+          }
+          return {
+            ...q,
+            options: opts
+          };
+        }) : [];
+
+        return {
+          ...sec,
+          questions
+        };
+      });
+    };
+
     if (formMode !== undefined) s.formMode = formMode;
     if (formSections !== undefined) {
-      try {
-        s.formSections = typeof formSections === 'string' ? JSON.parse(formSections) : formSections;
-      } catch (e) {
-        s.formSections = formSections;
-      }
+      s.formSections = cleanFormSections(formSections);
     }
 
     if (title !== undefined) s.title = title;
@@ -285,6 +326,7 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
     if (tickets !== undefined) s.tickets = safeParseArray(tickets);
     if (prizes !== undefined) s.prizes = safeParseArray(prizes);
     if (visibility !== undefined) s.visibility = visibility;
+    if (allowMultipleRegistrations !== undefined) s.allowMultipleRegistrations = allowMultipleRegistrations === true || allowMultipleRegistrations === 'true';
     if (registrationControl !== undefined) s.registrationControl = registrationControl;
     if (personalInfo !== undefined) s.personalInfo = safeParseArray(personalInfo);
     if (eduInfo !== undefined) s.eduInfo = safeParseArray(eduInfo);
@@ -520,12 +562,12 @@ router.get('/', softAuth, async (req, res) => {
     });
 
     const eventsWithPricing = events.map(event => {
-      const isRegistered = req.user ? event.registeredUsers?.some(id => id.toString() === req.user._id.toString()) : false;
+      const isRegistered = event.allowMultipleRegistrations ? false : (req.user ? event.registeredUsers?.some(id => id.toString() === req.user._id.toString()) : false);
       return { ...event, pricing: pricingMap[event._id.toString()], isRegistered, isAdminEvent: true };
     });
 
     const clubsEventsWithPricing = clubsEvents.map(event => {
-      const isRegistered = req.user ? event.registeredUsers?.some(id => id.toString() === req.user._id.toString()) : false;
+      const isRegistered = event.allowMultipleRegistrations ? false : (req.user ? event.registeredUsers?.some(id => id.toString() === req.user._id.toString()) : false);
       return { ...event, pricing: pricingMap[event._id.toString()], isRegistered, isClubEvent: true };
     });
 
@@ -545,70 +587,144 @@ router.get('/', softAuth, async (req, res) => {
 // @route   GET /api/events/registered
 router.get('/registered', requireAuth, async (req, res) => {
   try {
+    const registrations = await Registration.find({ user: req.user._id }).sort({ createdAt: 1 }).lean();
+    const paidRegistrations = await PaidRegistration.find({ user: req.user._id }).sort({ createdAt: 1 }).lean();
+
     const events = await Event.find({ registeredUsers: req.user._id }).lean();
     const submissions = await EventSubmission.find({ registeredUsers: req.user._id }).lean();
     const clubsEvents = await ClubsEvent.find({ registeredUsers: req.user._id }).lean();
 
-    const registrations = await Registration.find({ user: req.user._id }).lean();
-    const paidRegistrations = await PaidRegistration.find({ user: req.user._id }).lean();
-
-    const getRollNo = (eventId) => {
-      const reg = registrations.find(r => r.event.toString() === eventId.toString()) ||
-        paidRegistrations.find(r => r.event.toString() === eventId.toString());
-      if (reg && reg.customAnswers) {
-        const rollAnswer = reg.customAnswers.find(a => a.question && a.question.toLowerCase().includes('roll'));
-        if (rollAnswer) return rollAnswer.answer;
-      }
-      return null;
-    };
-
-    // Fetch all pricing details in one query
-    const allRegisteredEventIds = [
-      ...submissions.map(s => s._id),
-      ...events.map(e => e._id),
-      ...clubsEvents.map(ce => ce._id)
+    const regEventIds = [
+      ...registrations.map(r => r.event.toString()),
+      ...paidRegistrations.map(r => r.event.toString())
     ];
+
+    const extraEvents = await Event.find({ _id: { $in: regEventIds } }).lean();
+    const extraSubmissions = await EventSubmission.find({ _id: { $in: regEventIds } }).lean();
+    const extraClubsEvents = await ClubsEvent.find({ _id: { $in: regEventIds } }).lean();
+
+    const eventMap = {};
+    [...events, ...extraEvents].forEach(e => {
+      eventMap[e._id.toString()] = { doc: e, modelName: 'Event' };
+    });
+    [...submissions, ...extraSubmissions].forEach(s => {
+      eventMap[s._id.toString()] = { doc: s, modelName: 'EventSubmission' };
+    });
+    [...clubsEvents, ...extraClubsEvents].forEach(ce => {
+      eventMap[ce._id.toString()] = { doc: ce, modelName: 'ClubsEvent' };
+    });
+
+    const allRegisteredEventIds = Object.keys(eventMap);
     const pricingDetails = await PaidEventDetail.find({ event: { $in: allRegisteredEventIds } }).lean();
     const pricingMap = {};
     pricingDetails.forEach(p => {
       pricingMap[p.event.toString()] = p;
     });
 
-    // Normalize format and add pricing
-    const mappedSubmissions = submissions.map((s) => {
-      const pricing = pricingMap[s._id.toString()];
-      const qrToken = s.generateQRCode ? jwt.sign({ userId: req.user._id, eventId: s._id, model: 'EventSubmission' }, process.env.JWT_SECRET || 'secret') : null;
-      return {
-        ...s,
-        date: s.startDate,
-        venue: s.location,
-        image: s.imageUrl,
-        category: s.category || 'Special',
+    const getRollNoFromAnswers = (customAnswers) => {
+      if (!customAnswers || !Array.isArray(customAnswers)) return null;
+      const rollAnswer = customAnswers.find(a => a && a.question && a.question.toLowerCase().includes('roll'));
+      return rollAnswer ? rollAnswer.answer : null;
+    };
+
+    const eventPassCounts = {};
+    const passItems = [];
+
+    // Process free registrations
+    registrations.forEach((reg) => {
+      const entry = eventMap[reg.event.toString()];
+      if (!entry) return;
+      const ev = entry.doc;
+      const modelName = entry.modelName;
+
+      const eventIdStr = ev._id.toString();
+      eventPassCounts[eventIdStr] = (eventPassCounts[eventIdStr] || 0) + 1;
+      const passNum = eventPassCounts[eventIdStr];
+
+      const pricing = pricingMap[eventIdStr];
+      const qrToken = ev.generateQRCode ? jwt.sign({ userId: req.user._id, eventId: ev._id, registrationId: reg._id, model: modelName }, process.env.JWT_SECRET || 'secret') : null;
+
+      passItems.push({
+        ...ev,
+        _id: `${ev._id}_reg_${reg._id}`,
+        eventId: ev._id,
+        registrationId: reg._id,
+        registeredAt: reg.createdAt,
+        passNumber: passNum,
+        passLabel: `Pass #${passNum}`,
+        date: ev.startDate || ev.date,
+        venue: ev.location || ev.venue,
+        image: ev.imageUrl || ev.image,
+        category: ev.category || 'Special',
         pricing,
         qrToken,
-        rollNo: getRollNo(s._id)
-      };
+        rollNo: getRollNoFromAnswers(reg.customAnswers),
+        customAnswers: reg.customAnswers,
+        teamMembers: reg.teamMembers
+      });
     });
 
-    const eventsWithPricing = events.map((e) => {
-      const pricing = pricingMap[e._id.toString()];
-      const qrToken = e.generateQRCode ? jwt.sign({ userId: req.user._id, eventId: e._id, model: 'Event' }, process.env.JWT_SECRET || 'secret') : null;
-      return { ...e, pricing, qrToken, rollNo: getRollNo(e._id) };
-    });
+    // Process paid registrations
+    paidRegistrations.forEach((pReg) => {
+      const entry = eventMap[pReg.event.toString()];
+      if (!entry) return;
+      const ev = entry.doc;
+      const modelName = entry.modelName;
 
-    const mappedClubsEvents = clubsEvents.map((ce) => {
-      const pricing = pricingMap[ce._id.toString()];
-      const qrToken = ce.generateQRCode ? jwt.sign({ userId: req.user._id, eventId: ce._id, model: 'ClubsEvent' }, process.env.JWT_SECRET || 'secret') : null;
-      return {
-        ...ce,
+      const eventIdStr = ev._id.toString();
+      eventPassCounts[eventIdStr] = (eventPassCounts[eventIdStr] || 0) + 1;
+      const passNum = eventPassCounts[eventIdStr];
+
+      const pricing = pricingMap[eventIdStr];
+      const qrToken = ev.generateQRCode ? jwt.sign({ userId: req.user._id, eventId: ev._id, registrationId: pReg._id, model: modelName }, process.env.JWT_SECRET || 'secret') : null;
+
+      passItems.push({
+        ...ev,
+        _id: `${ev._id}_paid_${pReg._id}`,
+        eventId: ev._id,
+        registrationId: pReg._id,
+        registeredAt: pReg.createdAt,
+        passNumber: passNum,
+        passLabel: `Pass #${passNum}`,
+        date: ev.startDate || ev.date,
+        venue: ev.location || ev.venue,
+        image: ev.imageUrl || ev.image,
+        category: ev.category || 'Special',
         pricing,
         qrToken,
-        rollNo: getRollNo(ce._id)
-      };
+        rollNo: getRollNoFromAnswers(pReg.customAnswers),
+        customAnswers: pReg.customAnswers,
+        teamMembers: pReg.teamMembers
+      });
     });
 
-    const combined = [...eventsWithPricing, ...mappedSubmissions, ...mappedClubsEvents].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    res.json(combined);
+    // Fallback for events where user is in registeredUsers array but no Registration/PaidRegistration doc exists
+    Object.keys(eventMap).forEach((eventIdStr) => {
+      if (!eventPassCounts[eventIdStr]) {
+        const entry = eventMap[eventIdStr];
+        const ev = entry.doc;
+        const modelName = entry.modelName;
+        const pricing = pricingMap[eventIdStr];
+        const qrToken = ev.generateQRCode ? jwt.sign({ userId: req.user._id, eventId: ev._id, model: modelName }, process.env.JWT_SECRET || 'secret') : null;
+
+        passItems.push({
+          ...ev,
+          _id: ev._id,
+          eventId: ev._id,
+          date: ev.startDate || ev.date,
+          venue: ev.location || ev.venue,
+          image: ev.imageUrl || ev.image,
+          category: ev.category || 'Special',
+          pricing,
+          qrToken,
+          rollNo: null
+        });
+      }
+    });
+
+    passItems.sort((a, b) => new Date(b.registeredAt || b.createdAt) - new Date(a.registeredAt || a.createdAt));
+
+    res.json(passItems);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -890,7 +1006,7 @@ router.get('/:id', softAuth, async (req, res) => {
     }
 
     // Check registration status
-    event.isRegistered = req.user ? event.registeredUsers?.some(id => id.toString() === req.user._id.toString()) : false;
+    event.isRegistered = event.allowMultipleRegistrations ? false : (req.user ? event.registeredUsers?.some(id => id.toString() === req.user._id.toString()) : false);
 
     res.json(event);
   } catch (error) {
@@ -922,46 +1038,55 @@ router.get('/:id/participants', requireAuth, async (req, res) => {
     const attendedSet = new Set((event.attendedUsers || []).map(id => id.toString()));
 
     freeRegistrations.forEach(r => {
-      if (!r.user) return;
+      if (!r.user && (!r.teamMembers || r.teamMembers.length === 0)) return;
       const members = r.teamMembers && r.teamMembers.length > 0
         ? r.teamMembers
-        : [{ name: r.user.name, email: r.user.email, phone: r.user.phone, customAnswers: r.customAnswers }];
+        : [{ name: r.user?.name, email: r.user?.email, phone: r.user?.phone, customAnswers: r.customAnswers }];
+
+      const leaderName = members[0]?.name || r.user?.name || 'Participant';
+      const leaderEmail = members[0]?.email || r.user?.email || '';
+      const leaderPhone = members[0]?.phone || r.user?.phone || '';
+      const userId = r.user?._id || r._id;
 
       allParticipants.push({
-        id: r.user._id,
-        name: members[0].name,
-        email: members[0].email,
-        phone: members[0].phone,
-        avatar: r.user.avatar,
+        id: r._id,
+        userId: userId,
+        name: leaderName,
+        email: leaderEmail,
+        phone: leaderPhone,
+        avatar: r.user?.avatar || '',
         type: 'Free',
-        status: r.status || 'Registered',
-        answers: members[0].customAnswers || [],
-        checkedIn: attendedSet.has(r.user._id.toString()),
+        status: r.status || 'approved',
+        answers: members[0]?.customAnswers || r.customAnswers || [],
+        checkedIn: r.user ? attendedSet.has(r.user._id.toString()) : false,
         isTeam: members.length > 1,
         teamSize: r.teamSize || members.length,
-        teamMembers: members // Array of all members including leader
+        teamMembers: members
       });
     });
 
     paidRegistrations.forEach(r => {
-      if (!r.user) return;
+      if (!r.user && (!r.teamMembers || r.teamMembers.length === 0)) return;
       const members = r.teamMembers && r.teamMembers.length > 0
         ? r.teamMembers
-        : [{ name: r.user.name, email: r.user.email, phone: r.user.phone, customAnswers: r.customAnswers }];
+        : [{ name: r.user?.name, email: r.user?.email, phone: r.user?.phone, customAnswers: r.customAnswers }];
 
-      // Avoid duplicates if they are somehow in both (only check leaders to be safe)
-      if (allParticipants.find(p => p.id.toString() === r.user._id.toString())) return;
+      const leaderName = members[0]?.name || r.user?.name || 'Participant';
+      const leaderEmail = members[0]?.email || r.user?.email || '';
+      const leaderPhone = members[0]?.phone || r.user?.phone || '';
+      const userId = r.user?._id || r._id;
 
       allParticipants.push({
-        id: r.user._id,
-        name: members[0].name,
-        email: members[0].email,
-        phone: members[0].phone,
-        avatar: r.user.avatar,
+        id: r._id,
+        userId: userId,
+        name: leaderName,
+        email: leaderEmail,
+        phone: leaderPhone,
+        avatar: r.user?.avatar || '',
         type: 'Paid',
-        status: r.status || r.paymentStatus || 'Completed',
-        answers: members[0].customAnswers || [],
-        checkedIn: attendedSet.has(r.user._id.toString()),
+        status: r.status || r.paymentStatus || 'approved',
+        answers: members[0]?.customAnswers || r.customAnswers || [],
+        checkedIn: r.user ? attendedSet.has(r.user._id.toString()) : false,
         isTeam: members.length > 1,
         teamSize: r.teamSize || members.length,
         teamMembers: members
@@ -1003,17 +1128,29 @@ router.delete('/:id/participants/:userId', requireAuth, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to manage this event' });
     }
 
-    // Safely pull from arrays using MongoDB $pull
-    await Model.findByIdAndUpdate(eventId, {
-      $pull: {
-        registeredUsers: userId,
-        attendedUsers: userId
-      }
-    });
+    // Try deleting by Registration ID or User ID
+    const reg = await Registration.findById(userId);
+    const paidReg = await PaidRegistration.findById(userId);
+    const targetUserId = reg?.user || paidReg?.user || userId;
 
-    // Also remove from PaidRegistration / Registration just in case
-    await PaidRegistration.findOneAndDelete({ event: eventId, user: userId });
-    await Registration.findOneAndDelete({ event: eventId, user: userId });
+    await Registration.deleteMany({ _id: userId });
+    await PaidRegistration.deleteMany({ _id: userId });
+    await Registration.deleteMany({ event: eventId, user: userId });
+    await PaidRegistration.deleteMany({ event: eventId, user: userId });
+
+    if (targetUserId) {
+      const remainingFree = await Registration.countDocuments({ event: eventId, user: targetUserId });
+      const remainingPaid = await PaidRegistration.countDocuments({ event: eventId, user: targetUserId });
+
+      if (remainingFree === 0 && remainingPaid === 0) {
+        await Model.findByIdAndUpdate(eventId, {
+          $pull: {
+            registeredUsers: targetUserId,
+            attendedUsers: targetUserId
+          }
+        });
+      }
+    }
 
     res.json({ message: 'Participant deregistered successfully' });
   } catch (error) {
@@ -1090,7 +1227,7 @@ router.post('/:id/register', requireAuth, async (req, res) => {
     }
 
     // Check if user is already registered
-    if (event.registeredUsers.includes(req.user._id)) {
+    if (!event.allowMultipleRegistrations && event.registeredUsers.includes(req.user._id)) {
       return res.status(400).json({ message: 'Already registered for this event' });
     }
 
@@ -1125,7 +1262,9 @@ router.post('/:id/register', requireAuth, async (req, res) => {
       await User.findByIdAndUpdate(req.user._id, { phone: req.body.teamMembers[0].phone });
     }
 
-    event.registeredUsers.push(req.user._id);
+    if (!event.registeredUsers.includes(req.user._id)) {
+      event.registeredUsers.push(req.user._id);
+    }
     await event.save();
 
     // Save custom answers and team members for free registration

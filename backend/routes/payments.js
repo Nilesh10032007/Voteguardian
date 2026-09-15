@@ -29,13 +29,13 @@ router.post('/create-order', requireAuth, async (req, res) => {
     const event = await EventModel.findById(eventId);
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
-    const isAlreadyInRegisteredList = event.registeredUsers?.includes(req.user._id);
+    const isAlreadyInRegisteredList = !event.allowMultipleRegistrations && event.registeredUsers?.includes(req.user._id);
 
-    const existingRegistration = await PaidRegistration.findOne({
+    const existingRegistration = !event.allowMultipleRegistrations ? await PaidRegistration.findOne({
       user: req.user._id,
       event: String(eventId),
       status: 'completed'
-    });
+    }) : null;
 
     if (existingRegistration || isAlreadyInRegisteredList) {
       return res.status(400).json({ message: 'You have already registered for this event' });

@@ -46,18 +46,7 @@ const eventSchema = new mongoose.Schema({
     enum: ['builtin', 'external', 'multipage'],
     default: 'builtin'
   },
-  formSections: [{
-    id: String,
-    title: String,
-    description: String,
-    questions: [{
-      id: String,
-      question: String,
-      type: { type: String, default: 'Text' },
-      required: { type: String, default: 'Optional' },
-      options: [mongoose.Schema.Types.Mixed]
-    }]
-  }],
+  formSections: [mongoose.Schema.Types.Mixed],
   location: {
     type: String,
     default: ''
@@ -131,6 +120,7 @@ const eventSchema = new mongoose.Schema({
     amount: String
   }],
   visibility: { type: String, default: 'Public' },
+  allowMultipleRegistrations: { type: Boolean, default: false },
   registrationStatus: {
     type: String,
     enum: ['Open', 'Closed', 'Draft', 'Not Yet Started'],

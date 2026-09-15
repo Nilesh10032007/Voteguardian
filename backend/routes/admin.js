@@ -90,7 +90,7 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
     const { 
       title, description, organizer, date, venue, category, price, seats, tag, startDate, endDate, mode, location, capacity,
       participantType, teamMin, teamMax, eligibility, timeline, additionalDocs, rules, contacts, announcements, customQuestions,
-      tickets, prizes, visibility, registrationControl, personalInfo, eduInfo, organizingTeam, generateQRCode, registrationStatus, registrationDeadline, externalRegistrationLink
+      tickets, prizes, visibility, allowMultipleRegistrations, registrationControl, personalInfo, eduInfo, organizingTeam, generateQRCode, registrationStatus, registrationDeadline, externalRegistrationLink, formMode, formSections
     } = req.body;
 
     const safeParseArray = (val) => {
@@ -142,6 +142,7 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
     if (tickets !== undefined) event.tickets = safeParseArray(tickets);
     if (prizes !== undefined) event.prizes = safeParseArray(prizes);
     if (visibility !== undefined) event.visibility = visibility;
+    if (allowMultipleRegistrations !== undefined) event.allowMultipleRegistrations = allowMultipleRegistrations === true || allowMultipleRegistrations === 'true';
     if (registrationControl !== undefined) event.registrationControl = registrationControl;
     if (registrationStatus !== undefined) event.registrationStatus = registrationStatus;
     if (registrationDeadline !== undefined) event.registrationDeadline = registrationDeadline;
@@ -149,7 +150,53 @@ router.put('/events/:id', protect, admin, upload.single('image'), async (req, re
     if (personalInfo !== undefined) event.personalInfo = safeParseArray(personalInfo);
     if (eduInfo !== undefined) event.eduInfo = safeParseArray(eduInfo);
     if (organizingTeam !== undefined) event.organizingTeam = safeParseArray(organizingTeam);
-    if (generateQRCode !== undefined) event.generateQRCode = generateQRCode === true || generateQRCode === 'true';
+    const cleanFormSections = (sections) => {
+      if (!sections) return sections;
+      let parsed = sections;
+      if (typeof parsed === 'string') {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e1) {
+          try {
+            parsed = new Function(`return ${parsed}`)();
+          } catch (e2) {}
+        }
+      }
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed.map(sec => {
+        if (!sec || typeof sec !== 'object') return sec;
+        const questions = Array.isArray(sec.questions) ? sec.questions.map(q => {
+          if (!q || typeof q !== 'object') return q;
+          let opts = q.options;
+          if (typeof opts === 'string') {
+            opts = opts.trim();
+            try {
+              opts = JSON.parse(opts);
+            } catch (e1) {
+              try {
+                opts = new Function(`return ${opts}`)();
+              } catch (e2) {}
+            }
+          }
+          if (!Array.isArray(opts)) {
+            opts = opts !== undefined && opts !== null ? [opts] : [];
+          }
+          return {
+            ...q,
+            options: opts
+          };
+        }) : [];
+
+        return {
+          ...sec,
+          questions
+        };
+      });
+    };
+
+    if (formMode !== undefined) event.formMode = formMode;
+    if (formSections !== undefined) event.formSections = cleanFormSections(formSections);
 
     if (isSubmission) {
       if (startDate !== undefined) event.startDate = startDate;

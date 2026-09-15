@@ -255,18 +255,18 @@ export const EventDetail = ({ event, onBack, onRegister }: { event: any, onBack:
             )}
 
             <motion.button
-              onClick={event.isRegistered ? undefined : onRegister}
-              whileHover={!event.isRegistered ? { scale: 1.03, boxShadow: '0 8px 30px rgba(139,92,246,0.4)' } : {}}
-              whileTap={!event.isRegistered ? { scale: 0.97 } : {}}
+              onClick={(event.isRegistered && !event.allowMultipleRegistrations) ? undefined : onRegister}
+              whileHover={!(event.isRegistered && !event.allowMultipleRegistrations) ? { scale: 1.03, boxShadow: '0 8px 30px rgba(139,92,246,0.4)' } : {}}
+              whileTap={!(event.isRegistered && !event.allowMultipleRegistrations) ? { scale: 0.97 } : {}}
               style={{
                 width: '100%',
-                background: event.isRegistered ? '#10b981' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+                background: (event.isRegistered && !event.allowMultipleRegistrations) ? '#10b981' : 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
                 color: '#ffffff', border: 'none', padding: '1rem', borderRadius: '14px',
                 fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                cursor: event.isRegistered ? 'default' : 'pointer', fontFamily: "'Outfit', sans-serif"
+                cursor: (event.isRegistered && !event.allowMultipleRegistrations) ? 'default' : 'pointer', fontFamily: "'Outfit', sans-serif"
               }}
             >
-              {event.isRegistered ? (
+              {(event.isRegistered && !event.allowMultipleRegistrations) ? (
                 <>
                   <CheckCircle size={20} /> Already Registered
                 </>
@@ -754,7 +754,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
         </div>
 
         <AnimatePresence mode="wait">
-          {event.isRegistered ? renderTicket(true) : step === 1 ? (
+          {(event.isRegistered && !event.allowMultipleRegistrations) ? renderTicket(true) : step === 1 ? (
             <motion.form key="form" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
               <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>

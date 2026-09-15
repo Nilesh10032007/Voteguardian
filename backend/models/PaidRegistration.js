@@ -76,7 +76,7 @@ const paidRegistrationSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-// Prevent multiple successful registrations for the same user and event
-paidRegistrationSchema.index({ user: 1, event: 1 }, { unique: true });
+// Index for fast query of user registrations
+paidRegistrationSchema.index({ user: 1, event: 1 });
 
 module.exports = mongoose.model('PaidRegistration', paidRegistrationSchema);
