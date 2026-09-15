@@ -207,7 +207,13 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
     } = req.body;
 
     if (formMode !== undefined) s.formMode = formMode;
-    if (formSections !== undefined) s.formSections = formSections;
+    if (formSections !== undefined) {
+      try {
+        s.formSections = typeof formSections === 'string' ? JSON.parse(formSections) : formSections;
+      } catch (e) {
+        s.formSections = formSections;
+      }
+    }
 
     if (title !== undefined) s.title = title;
     if (description !== undefined) s.description = description;
