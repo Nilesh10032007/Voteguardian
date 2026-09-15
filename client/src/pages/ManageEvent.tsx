@@ -1244,6 +1244,7 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                                 <option value="Checkbox">Checkbox</option>
                                 <option value="File Upload">File Upload</option>
                                 <option value="Header Text / Note">Header Text / Note (Static Info)</option>
+                                <option value="Special Dropdown (Page Navigation)">Special Dropdown (Page Navigation)</option>
                               </select>
                               {secQuestion.type !== 'Header Text / Note' && (
                                 <select value={secQuestion.required} onChange={e => setSecQuestion({ ...secQuestion, required: e.target.value })} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', flex: 1 }}>
@@ -1253,26 +1254,77 @@ function RegistrationTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                               )}
                             </div>
 
-                            {(secQuestion.type === 'Checkbox' || secQuestion.type === 'Dropdown') && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Options</div>
-                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                  {(secQuestion.options || []).map((opt: string, idx: number) => (
-                                    <div key={idx} style={{ background: '#f1f5f9', color: '#1e293b', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      {opt} <X size={12} style={{ cursor: 'pointer' }} onClick={() => setSecQuestion({ ...secQuestion, options: (secQuestion.options || []).filter((_: any, i: number) => i !== idx) })} />
-                                    </div>
-                                  ))}
+                            {(secQuestion.type === 'Checkbox' || secQuestion.type === 'Dropdown' || secQuestion.type === 'Special Dropdown (Page Navigation)') && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>
+                                  Options {secQuestion.type === 'Special Dropdown (Page Navigation)' && '& Target Page Mappings'}
                                 </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                  <input type="text" placeholder="Add option" id={`sec-option-input-${sIdx}`} style={{ padding: '6px', borderRadius: '4px', border: '1px solid #CCC', flex: 1 }} />
-                                  <button type="button" onClick={() => {
-                                    const input = document.getElementById(`sec-option-input-${sIdx}`) as HTMLInputElement;
-                                    if (input && input.value.trim()) {
-                                      const currentOptions = secQuestion.options || [];
-                                      setSecQuestion({ ...secQuestion, options: [...currentOptions, input.value.trim()] });
-                                      input.value = '';
-                                    }
-                                  }} style={{ background: '#111', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Add Option</button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  {(secQuestion.options || []).map((opt: any, idx: number) => {
+                                    const label = typeof opt === 'object' && opt !== null ? opt.label : String(opt);
+                                    const targetSectionId = typeof opt === 'object' && opt !== null ? opt.targetSectionId : '';
+                                    const targetSectionObj = formSections.find((s: any) => s.id === targetSectionId || s.title === targetSectionId);
+                                    const targetName = targetSectionObj ? targetSectionObj.title : (targetSectionId === 'submit' ? 'Submit Form (End)' : 'Next Page (Default)');
+
+                                    return (
+                                      <div key={idx} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, flexWrap: 'wrap' }}>
+                                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{label}</span>
+                                          {secQuestion.type === 'Special Dropdown (Page Navigation)' && (
+                                            <span style={{ background: '#e0e7ff', color: '#3730a3', fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: '4px' }}>
+                                              ➜ {targetName}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <X size={16} color="#ef4444" style={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => setSecQuestion({ ...secQuestion, options: (secQuestion.options || []).filter((_: any, i: number) => i !== idx) })} />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginTop: '4px' }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Option text (e.g. Option A)"
+                                    id={`sec-option-input-${sIdx}`}
+                                    style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', flex: 1, minWidth: '150px', outline: 'none' }}
+                                  />
+                                  {secQuestion.type === 'Special Dropdown (Page Navigation)' && (
+                                    <select
+                                      id={`sec-option-target-${sIdx}`}
+                                      style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', flex: 1, minWidth: '180px', outline: 'none', background: '#fff' }}
+                                    >
+                                      <option value="">Next Page (Default)</option>
+                                      {formSections.map((secItem: any, secIdx: number) => (
+                                        <option key={secItem.id || secIdx} value={secItem.id || secItem.title}>
+                                          Section {secIdx + 1}: {secItem.title}
+                                        </option>
+                                      ))}
+                                      <option value="submit">Submit Form (End of Form)</option>
+                                    </select>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const input = document.getElementById(`sec-option-input-${sIdx}`) as HTMLInputElement;
+                                      const targetSelect = document.getElementById(`sec-option-target-${sIdx}`) as HTMLSelectElement | null;
+                                      if (input && input.value.trim()) {
+                                        const labelStr = input.value.trim();
+                                        const targetVal = targetSelect ? targetSelect.value : '';
+                                        const currentOptions = secQuestion.options || [];
+                                        const newOpt = secQuestion.type === 'Special Dropdown (Page Navigation)'
+                                          ? { label: labelStr, targetSectionId: targetVal }
+                                          : labelStr;
+
+                                        setSecQuestion({ ...secQuestion, options: [...currentOptions, newOpt] });
+                                        input.value = '';
+                                        if (targetSelect) targetSelect.value = '';
+                                      }
+                                    }}
+                                    style={{ background: '#0f172a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 700 }}
+                                  >
+                                    Add Option
+                                  </button>
                                 </div>
                               </div>
                             )}

@@ -53,9 +53,9 @@ const eventSchema = new mongoose.Schema({
     questions: [{
       id: String,
       question: String,
-      type: { type: String, enum: ['Text', 'Checkbox', 'Radio', 'Dropdown', 'File Upload', 'Header Text / Note', 'Header Text'], default: 'Text' },
-      required: { type: String, enum: ['Required', 'Optional', 'Off'], default: 'Optional' },
-      options: [String]
+      type: { type: String, default: 'Text' },
+      required: { type: String, default: 'Optional' },
+      options: [mongoose.Schema.Types.Mixed]
     }]
   }],
   location: {
@@ -116,10 +116,10 @@ const eventSchema = new mongoose.Schema({
   }],
   customQuestions: [{
     question: String,
-    type: { type: String, enum: ['Text', 'Checkbox', 'Radio', 'Dropdown', 'File Upload', 'Header Text / Note', 'Header Text'], default: 'Text' },
-    required: { type: String, enum: ['Required', 'Optional', 'Off'], default: 'Optional' },
-    options: [String],
-    selectionType: { type: String, enum: ['Single', 'Multiple'], default: 'Multiple' }
+    type: { type: String, default: 'Text' },
+    required: { type: String, default: 'Optional' },
+    options: [mongoose.Schema.Types.Mixed],
+    selectionType: { type: String, default: 'Multiple' }
   }],
   tickets: [{
     category: String,

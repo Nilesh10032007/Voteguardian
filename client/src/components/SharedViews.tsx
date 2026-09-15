@@ -304,10 +304,85 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
 
   const [currentStep, setCurrentStep] = useState(0); // Current team member index
   const [activeSection, setActiveSection] = useState(0); // Multi-page form step index
+  const [sectionHistory, setSectionHistory] = useState<number[]>([0]);
 
   const isMultiPageMode = event?.formMode === 'multipage' && event?.formSections && event.formSections.length > 0;
   const currentFormSections = isMultiPageMode ? event.formSections : [];
   const currentSectionData = isMultiPageMode ? currentFormSections[activeSection] : null;
+
+  const getExcludedSectionIds = (): string[] => {
+    if (!isMultiPageMode) return [];
+    const excluded: string[] = [];
+    const m = teamMembers[currentStep];
+
+    for (const sec of currentFormSections) {
+      for (const q of (sec.questions || [])) {
+        if (q.type === 'Special Dropdown (Page Navigation)' || (Array.isArray(q.options) && q.options.some((o: any) => typeof o === 'object' && o?.targetSectionId))) {
+          const answered = m?.customAnswers?.find((a: any) => a.question === q.question);
+          const chosenAnswer = answered?.answer;
+
+          (q.options || []).forEach((o: any) => {
+            if (typeof o === 'object' && o !== null && o.targetSectionId && o.targetSectionId !== 'submit') {
+              const label = o.label || String(o);
+              if (!chosenAnswer || label !== chosenAnswer) {
+                const targetSec = currentFormSections.find((s: any) => s.id === o.targetSectionId || s.title === o.targetSectionId);
+                if (targetSec) {
+                  if (targetSec.id) excluded.push(targetSec.id);
+                  if (targetSec.title) excluded.push(targetSec.title);
+                } else {
+                  excluded.push(o.targetSectionId);
+                }
+              }
+            }
+          });
+        }
+      }
+    }
+    return excluded;
+  };
+
+  const calculateNextSection = (fromIdx: number): number => {
+    if (!isMultiPageMode || !currentFormSections[fromIdx]) return fromIdx + 1;
+    const m = teamMembers[currentStep];
+    const secData = currentFormSections[fromIdx];
+
+    // Check if current section has a Special Dropdown answered
+    for (let q of (secData.questions || [])) {
+      if (q.type === 'Special Dropdown (Page Navigation)' || (Array.isArray(q.options) && q.options.some((o: any) => typeof o === 'object' && o?.targetSectionId))) {
+        const answered = m?.customAnswers?.find((a: any) => a.question === q.question);
+        if (answered && answered.answer) {
+          const matchedOpt = (q.options || []).find((o: any) => {
+            const lbl = typeof o === 'object' && o !== null ? o.label : String(o);
+            return lbl === answered.answer;
+          });
+
+          if (matchedOpt && typeof matchedOpt === 'object' && matchedOpt.targetSectionId) {
+            const targetId = matchedOpt.targetSectionId;
+            if (targetId === 'submit') {
+              return currentFormSections.length;
+            } else {
+              const targetIdx = currentFormSections.findIndex((s: any) => s.id === targetId || s.title === targetId);
+              if (targetIdx !== -1) {
+                return targetIdx;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Standard forward progression: find next candidate section that is NOT excluded
+    const excludedIds = getExcludedSectionIds();
+    for (let candIdx = fromIdx + 1; candIdx < currentFormSections.length; candIdx++) {
+      const candidateSec = currentFormSections[candIdx];
+      const isExcluded = excludedIds.some(id => id === candidateSec.id || id === candidateSec.title);
+      if (!isExcluded) {
+        return candIdx;
+      }
+    }
+
+    return currentFormSections.length;
+  };
 
   const updateTeamSize = (size: number) => {
     let newSize = Math.max(isTeam ? minTeam : 1, Math.min(size, isTeam ? maxTeam : 1));
@@ -564,8 +639,11 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
         return;
       }
 
-      if (activeSection < currentFormSections.length - 1) {
-        setActiveSection(prev => prev + 1);
+      const nextSectionIndex = calculateNextSection(activeSection);
+
+      if (nextSectionIndex < currentFormSections.length) {
+        setSectionHistory(prev => [...prev, nextSectionIndex]);
+        setActiveSection(nextSectionIndex);
         return;
       }
     }
@@ -833,7 +911,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                             );
                           }
 
-                          if (q.type === 'Dropdown') {
+                          if (q.type === 'Dropdown' || q.type === 'Special Dropdown (Page Navigation)') {
                             return (
                               <div key={`sec-q-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                 <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#000000' }}>{qNum++}. {q.question} {isReq && '*'}</label>
@@ -844,9 +922,10 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                                   style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F9FAFB', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#000000', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', cursor: 'pointer', fontWeight: 500 }}
                                 >
                                   <option value="" disabled>Select an option</option>
-                                  {q.options?.map((opt: string, idx: number) => (
-                                    <option key={idx} value={opt}>{opt}</option>
-                                  ))}
+                                  {q.options?.map((opt: any, idx: number) => {
+                                    const label = typeof opt === 'object' && opt !== null ? opt.label : String(opt);
+                                    return <option key={idx} value={label}>{label}</option>;
+                                  })}
                                 </select>
                               </div>
                             );
@@ -1166,15 +1245,24 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                {(currentStep > 0 || (isMultiPageMode && activeSection > 0)) && (
+                {(currentStep > 0 || (isMultiPageMode && (activeSection > 0 || sectionHistory.length > 1))) && (
                   <button
                     type="button"
                     onClick={() => {
                       if (isMultiPageMode && activeSection > 0) {
-                        setActiveSection(prev => prev - 1);
+                        setSectionHistory(prev => {
+                          const newHist = [...prev];
+                          newHist.pop();
+                          const prevIdx = newHist.length > 0 ? newHist[newHist.length - 1] : 0;
+                          setActiveSection(prevIdx);
+                          return newHist;
+                        });
                       } else if (currentStep > 0) {
                         setCurrentStep(prev => prev - 1);
-                        if (isMultiPageMode) setActiveSection(currentFormSections.length - 1);
+                        if (isMultiPageMode) {
+                          setActiveSection(0);
+                          setSectionHistory([0]);
+                        }
                       }
                     }}
                     style={{ background: '#F3F4F6', color: '#4B5563', padding: '1rem', borderRadius: '12px', fontWeight: 600, border: 'none', cursor: 'pointer', flex: 0.4, fontSize: '1.05rem', fontFamily: 'inherit' }}
@@ -1199,13 +1287,16 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                     boxShadow: (!loading) ? '0 10px 25px rgba(139, 92, 246, 0.4)' : 'none',
                     flex: 1
                   }}>
-                  {loading ? <Loader2 size={24} className="spin" /> : (
-                    isMultiPageMode && activeSection < currentFormSections.length - 1
-                      ? `Next: ${currentFormSections[activeSection + 1]?.title || `Page ${activeSection + 2}`}`
-                      : (currentStep < teamSize - 1
-                          ? `Next: Member ${currentStep + 2}`
-                          : (totalAmount > 0 ? `Pay Now (₹${totalAmount})` : 'Complete Registration'))
-                  )}
+                  {loading ? <Loader2 size={24} className="spin" /> : (() => {
+                    const nextCalculatedIdx = isMultiPageMode ? calculateNextSection(activeSection) : -1;
+                    if (isMultiPageMode && nextCalculatedIdx < currentFormSections.length) {
+                      return `Next: ${currentFormSections[nextCalculatedIdx]?.title || `Page ${nextCalculatedIdx + 1}`}`;
+                    }
+                    if (currentStep < teamSize - 1) {
+                      return `Next: Member ${currentStep + 2}`;
+                    }
+                    return totalAmount > 0 ? `Pay Now (₹${totalAmount})` : 'Register Now';
+                  })()}
                 </motion.button>
               </div>
             </motion.form>
