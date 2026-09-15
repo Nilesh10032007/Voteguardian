@@ -1591,43 +1591,63 @@ function ParticipantsTab({ event }: { event: any }) {
       return;
     }
 
-    // Collect all unique questions from participants (in case event schema changed)
+    // Collect all unique questions and check if standard fields exist
     const questionSet = new Set<string>();
+    let hasName = false;
+    let hasEmail = false;
+    let hasPhone = false;
+
     participants.forEach(p => {
+      if (p.name) hasName = true;
+      if (p.email) hasEmail = true;
+      if (p.phone) hasPhone = true;
+
       (p.answers || []).forEach((a: any) => {
         if (a.question) questionSet.add(a.question);
       });
     });
     const allQuestions = Array.from(questionSet);
 
-    let headers = ['Name', 'Email', 'Phone', 'Ticket Type', 'Status'];
+    let headers = [];
+    if (hasName) headers.push('Name');
+    if (hasEmail) headers.push('Email');
+    if (hasPhone) headers.push('Phone');
+    headers.push('Ticket Type', 'Status');
+
     if (event?.generateQRCode) headers.push('Checked In');
 
-    // Add dynamic questions as headers
     allQuestions.forEach(q => headers.push(`"${q.replace(/"/g, '""')}"`));
 
     let csvContent = headers.join(",") + "\n";
 
     participants.forEach(p => {
-      const name = p.name ? `"${p.name.replace(/"/g, '""')}"` : '""';
-      const email = p.email ? `"${p.email}"` : '""';
-      // Use standard CSV text formatting for long numbers
-      const phone = p.phone ? `="${p.phone}"` : '""';
-      const ticketType = p.type ? `"${p.type}"` : '""';
-      const status = p.status ? `"${p.status}"` : '""';
-
-      let row = [name, email, phone, ticketType, status];
+      let row = [];
+      
+      if (hasName) row.push(`"${(p.name || '').replace(/"/g, '""')}"`);
+      if (hasEmail) row.push(`"${(p.email || '').replace(/"/g, '""')}"`);
+      if (hasPhone) {
+        if (p.phone && /^\+?\d{7,}$/.test(p.phone)) row.push(`="${p.phone.replace(/"/g, '""')}"`);
+        else row.push(`"${(p.phone || '').replace(/"/g, '""')}"`);
+      }
+      
+      row.push(p.type ? `"${p.type}"` : '""');
+      row.push(p.status ? `"${p.status}"` : '""');
 
       if (event?.generateQRCode) {
         row.push(p.checkedIn ? '"Yes"' : '"No"');
       }
 
-      // Append answers based on collected questions
       allQuestions.forEach(q => {
         const ansObj = (p.answers || []).find((a: any) => a.question === q);
         let ansStr = ansObj?.answer || '';
         if (Array.isArray(ansStr)) ansStr = ansStr.join(', ');
-        row.push(`"${ansStr.toString().replace(/"/g, '""')}"`);
+        
+        const strVal = ansStr.toString();
+        if (/^\+?\d{7,}$/.test(strVal)) {
+           row.push(`="${strVal.replace(/"/g, '""')}"`);
+        } else {
+           row.push(`"${strVal.replace(/"/g, '""')}"`);
+        }
       });
 
       csvContent += row.join(",") + "\n";
@@ -1777,7 +1797,18 @@ function ParticipantsTab({ event }: { event: any }) {
             ) : participants.length === 0 ? (
               <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>No participants registered yet.</div>
             ) : viewMode === 'list' ? (
-              participants.map((p, i) => (
+              participants.map((p, i) => {
+                const customAnswers = (p.answers || []).map((a: any) => {
+                  let ansStr = a.answer || '';
+                  if (Array.isArray(ansStr)) ansStr = ansStr.join(', ');
+                  return ansStr.toString();
+                }).filter(Boolean);
+                
+                const dn = p.name || customAnswers[0] || 'N/A';
+                const de = p.email || (p.name ? '' : customAnswers[1]) || '';
+                const dp = p.phone || (p.name ? '' : customAnswers[2]) || '';
+                
+                return (
                 <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '12px 1rem', borderRadius: '8px', border: '1px solid #eaeaea', flexWrap: 'wrap', gap: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '220px' }}>
                     <UserAvatar name={p.name} avatar={p.avatar} size={36} />
@@ -1806,10 +1837,21 @@ function ParticipantsTab({ event }: { event: any }) {
                     </button>
                   </div>
                 </div>
-              ))
+              )})
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                {participants.map((p, i) => (
+                {participants.map((p, i) => {
+                  const customAnswers = (p.answers || []).map((a: any) => {
+                    let ansStr = a.answer || '';
+                    if (Array.isArray(ansStr)) ansStr = ansStr.join(', ');
+                    return ansStr.toString();
+                  }).filter(Boolean);
+                  
+                  const dn = p.name || customAnswers[0] || 'N/A';
+                  const de = p.email || (p.name ? '' : customAnswers[1]) || '';
+                  const dp = p.phone || (p.name ? '' : customAnswers[2]) || '';
+                  
+                  return (
                   <div key={p.id || i} style={{ background: '#fff', border: '1px solid #eaeaea', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1928,13 +1970,12 @@ function ParticipantsTab({ event }: { event: any }) {
                       </button>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </div>
         </div>
       </div>
-
       {showCheckedInModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ background: '#fff', padding: '2rem', borderRadius: '16px', width: '100%', maxWidth: '500px', maxHeight: '80vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
