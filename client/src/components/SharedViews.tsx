@@ -590,14 +590,22 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
       const numericPrice = ticketPriceStr === 'Free' || ticketPriceStr === '0' ? 0 : Number(ticketPriceStr || event.pricing?.ticketPrice || 0);
       const isPaidTicket = numericPrice > 0;
 
+      // Clean payload to not send fields that are explicitly turned Off
+      const cleanedTeamMembers = teamMembers.map(m => ({
+        ...m,
+        name: isFieldOff('Name') ? '' : m.name,
+        email: isFieldOff('Email') ? '' : m.email,
+        phone: isFieldOff('Mobile Number') ? '' : m.phone,
+      }));
+
       if (event.pricing?.isPaid || isPaidTicket) {
         const { data: orderData } = await api.post('/payments/create-order', {
           eventId: actualEventId,
           eventModel: actualModel,
           ticketsCount: ticketQuantity,
           teamSize: teamSize,
-          teamMembers: teamMembers,
-          customAnswers: teamMembers[0].customAnswers || []
+          teamMembers: cleanedTeamMembers,
+          customAnswers: cleanedTeamMembers[0].customAnswers || []
         });
 
         await handleRazorpayPayment(orderData);
@@ -605,8 +613,8 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
         const payload = {
           ticketType: selectedTicket,
           teamSize: teamSize,
-          teamMembers: teamMembers,
-          customAnswers: teamMembers[0].customAnswers || []
+          teamMembers: cleanedTeamMembers,
+          customAnswers: cleanedTeamMembers[0].customAnswers || []
         };
         await api.post(`/events/${actualEventId}/register`, payload);
 
