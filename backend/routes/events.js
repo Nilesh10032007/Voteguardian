@@ -258,7 +258,10 @@ router.put('/submission/:id', requireAuth, upload.single('image'), async (req, r
 
     if (title !== undefined) s.title = title;
     if (description !== undefined) s.description = description;
-    if (startDate !== undefined) s.startDate = startDate;
+    if (startDate !== undefined) {
+      s.startDate = startDate;
+      s.date = startDate;
+    }
     if (endDate !== undefined) s.endDate = endDate;
     if (mode !== undefined) s.mode = mode;
     if (location !== undefined) s.location = location;

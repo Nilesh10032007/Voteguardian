@@ -5,6 +5,17 @@ import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import darkLogo from '../logo/dark logo.png';
 
+const formatEventDate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return 'TBA';
+  let str = String(dateStr).trim();
+  if (str.includes('T')) {
+    const [d, t] = str.split('T');
+    const timeClean = t ? t.split('.')[0].substring(0, 5) : '';
+    return timeClean ? `${d} • ${timeClean}` : d;
+  }
+  return str;
+};
+
 // ─── Shared Event Detail View ───────────────────────────────────────────────────────────
 import { useLikedEvents } from '../hooks/useLikedEvents';
 
@@ -167,7 +178,7 @@ export const EventDetail = ({ event, onBack, onRegister }: { event: any, onBack:
           </div>
           <div>
             <p style={{ fontSize: '0.95rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, marginBottom: '6px' }}>Date & Time</p>
-            <p style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>{event?.date || event?.startDate || 'TBD'}</p>
+            <p style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>{formatEventDate(event?.startDate || event?.date)}</p>
           </div>
         </div>
 
@@ -440,7 +451,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
           </div>
           <div style={{ gridColumn: 'span 2' }}>
             <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', margin: '0 0 0.2rem 0' }}>Date & Time</p>
-            <p style={{ fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>{event?.date || event?.startDate || 'TBA'}</p>
+            <p style={{ fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>{formatEventDate(event?.startDate || event?.date)}</p>
           </div>
         </div>
 
