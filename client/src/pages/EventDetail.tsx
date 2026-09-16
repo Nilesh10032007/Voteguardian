@@ -52,7 +52,7 @@ const EventDetail = ({ hash }: { hash?: string }) => {
           id: data._id,
           title: data.title,
           img: data.image || data.imageUrl || '/event1.png',
-          date: data.date || data.startDate || 'TBA',
+          date: data.startDate || data.date || 'TBA',
           venue: data.venue || data.location || 'TBA',
           category: data.category || 'Event',
           description: data.description || 'No description available',
