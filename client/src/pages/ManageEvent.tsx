@@ -62,6 +62,7 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
   const [participantType, setParticipantType] = useState<'individual' | 'team'>(event?.participantType || 'individual');
   const [teamMin, setTeamMin] = useState(event?.teamMin || '');
   const [teamMax, setTeamMax] = useState(event?.teamMax || '');
+  const [capacity, setCapacity] = useState<string>(event?.capacity ? String(event.capacity) : '');
 
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [description, setDescription] = useState(event?.description || '');
@@ -80,6 +81,7 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
     if (event) {
       if (event.visibility) setVisibility(event.visibility);
       if (event.allowMultipleRegistrations !== undefined) setAllowMultipleRegistrations(!!event.allowMultipleRegistrations);
+      if (event.capacity !== undefined) setCapacity(event.capacity ? String(event.capacity) : '');
     }
   }, [event]);
 
@@ -405,6 +407,35 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
                 <input type="number" value={teamMax} onChange={e => setTeamMax(Number(e.target.value))} style={{ width: '60px', background: '#dcdcdc', border: 'none', borderRadius: '4px', padding: '4px', textAlign: 'center' }} />
               </div>
             )}
+          </div>
+
+          {/* Max Capacity Limit */}
+          <div style={{ background: '#eaeaea', borderRadius: '12px', padding: '1rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#111' }}>Max Participant Capacity</div>
+                <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '2px' }}>Enter limit (e.g. 100) or leave empty for Unlimited</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <input
+                  type="number"
+                  placeholder="Unlimited"
+                  value={capacity}
+                  onChange={e => setCapacity(e.target.value)}
+                  style={{ background: '#fff', border: '1px solid #ccc', borderRadius: '6px', padding: '6px 10px', width: '110px', fontSize: '0.85rem', fontWeight: 700, outline: 'none' }}
+                />
+                <button
+                  onClick={async () => {
+                    const capNum = capacity ? Number(capacity) : 0;
+                    const success = await saveEvent({ capacity: capNum });
+                    if (success) alert('Max participant capacity updated successfully!');
+                  }}
+                  style={{ background: '#111', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
           </div>
 
         </div>
