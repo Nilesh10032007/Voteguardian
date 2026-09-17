@@ -477,113 +477,122 @@ const EventDetail = ({ hash }: { hash?: string }) => {
               </div>
 
               {/* Registration Card */}
-              <div className="reg-card order-3" style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.5rem', marginBottom: '2.5rem', border: '1px solid #f1f5f9' }}>
-                <div style={{ fontSize: '1rem', color: '#64748b', fontWeight: 600, marginBottom: '2rem' }}>
-                  {(rawEvent?.registrationDeadline) ? (
-                    getValidDate(rawEvent.registrationDeadline) 
-                      ? `Registration closes on ${getValidDate(rawEvent.registrationDeadline)!.toLocaleString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}` 
-                      : `Registration closes on ${cleanDateStr(rawEvent.registrationDeadline)}`
-                  ) : (
-                    'Registration deadline has not been decided yet.'
-                  )}
-                </div>
-                <div className="reg-card-flex" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500, marginBottom: '0.5rem' }}>Registration Fees</div>
-                    <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#111' }}>
-                      {rawEvent?.tickets && rawEvent.tickets.length > 0 ? rawEvent.tickets[0].price : currentEvent.price}
+              {(() => {
+                const isCapacityFull = !!(rawEvent?.isFull || (rawEvent?.capacity && Number(rawEvent.capacity) > 0 && (
+                  (rawEvent.totalRegistrationsCount !== undefined ? Number(rawEvent.totalRegistrationsCount) >= Number(rawEvent.capacity) : false) ||
+                  (rawEvent.registeredUsers && Array.isArray(rawEvent.registeredUsers) && rawEvent.registeredUsers.length >= Number(rawEvent.capacity))
+                )));
+                const isUserRegistered = currentEvent.isRegistered && !rawEvent?.allowMultipleRegistrations && !currentEvent?.allowMultipleRegistrations;
+
+                return (
+                  <div className="reg-card order-3" style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.5rem', marginBottom: '2.5rem', border: '1px solid #f1f5f9' }}>
+                    <div style={{ fontSize: '1rem', color: '#64748b', fontWeight: 600, marginBottom: '2rem' }}>
+                      {(rawEvent?.registrationDeadline) ? (
+                        getValidDate(rawEvent.registrationDeadline) 
+                          ? `Registration closes on ${getValidDate(rawEvent.registrationDeadline)!.toLocaleString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}` 
+                          : `Registration closes on ${cleanDateStr(rawEvent.registrationDeadline)}`
+                      ) : (
+                        'Registration deadline has not been decided yet.'
+                      )}
+                    </div>
+                    <div className="reg-card-flex" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500, marginBottom: '0.5rem' }}>Registration Fees</div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#111' }}>
+                          {rawEvent?.tickets && rawEvent.tickets.length > 0 ? rawEvent.tickets[0].price : currentEvent.price}
+                        </div>
+                      </div>
+                      <button
+                        className="reg-btn"
+                        onClick={() => {
+                          if (isHardcodedFormEvent) {
+                            window.open('https://forms.gle/6YHQtLEd9Moancs39', '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (isMoodiEvent) {
+                            window.open('https://my.moodi.org/multicities', '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (!isLoggedIn) {
+                            window.location.hash = '#signin';
+                            return;
+                          }
+
+                          if (isClosed || isNotStarted || isCapacityFull) return;
+                          
+                          if (rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All') {
+                            if (user?.education?.department !== rawEvent.targetDepartment) {
+                              alert(`You are not eligible for this event.\n\nThis event is restricted to ${rawEvent.targetDepartment} students.\nYour department is ${user?.education?.department || 'not specified'}.`);
+                              return;
+                            }
+                          }
+
+                          if (currentEvent.title && (currentEvent.title.toLowerCase().includes('cohort') || currentEvent.title.toLowerCase().includes('incubation'))) {
+                            window.open('https://jecrcincubation.com/cohort-8', '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (rawEvent?.externalRegistrationLink) {
+                            window.open(rawEvent.externalRegistrationLink, '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (currentEvent.title && currentEvent.title.toLowerCase().includes('caravan')) {
+                            window.location.href = 'https://pages.razorpay.com/clubcaravan2026';
+                            return;
+                          }
+
+                          if (currentEvent.title && currentEvent.title.toLowerCase().includes('nss intake')) {
+                            window.open('https://forms.gle/jH4jKnuJMQ8NyNx99', '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (currentEvent.title && currentEvent.title.toLowerCase().includes('genesis')) {
+                            window.open('https://mshportal.meity.gov.in/ext/form/23966/1/apply?source=JECRC%20Incubation%20Centre&medium=post-JECRC', '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (currentEvent.title && currentEvent.title.toLowerCase().includes('sustainability innovation')) {
+                            window.open('https://forms.gle/8PncqNHEg5RdMWxo8', '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (currentEvent.title && currentEvent.title.toLowerCase().includes('cse social media')) {
+                            window.open('https://docs.google.com/forms/d/1WMTa2CtkMOwmngeMlEpuK7vz3uxKn4IRDO3dV2eotG0/viewform', '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (currentEvent.title && (currentEvent.title.toLowerCase().includes('fresher') || currentEvent.title.toLowerCase().includes('mrfresher'))) {
+                            window.open('https://docs.google.com/forms/d/e/1FAIpQLSdH54mUtkKk6UtzSc_6aHAzM4Kom0RJn4DvAhBwcLJYjHQykQ/viewform', '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (!isUserRegistered) setShowRegister(true);
+                        }}
+                        style={{
+                          background: isNotStarted ? '#94a3b8' : (isClosed ? '#ef4444' : (isCapacityFull ? '#ef4444' : (isUserRegistered ? '#10b981' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? '#94a3b8' : '#0f172a')))),
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '1rem 3rem',
+                          fontSize: '1.1rem',
+                          fontWeight: 700,
+                          cursor: (isClosed || isNotStarted || isCapacityFull) ? 'not-allowed' : (isUserRegistered ? 'default' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? 'not-allowed' : 'pointer')),
+                          transition: 'background 0.2s',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {isNotStarted ? 'Coming Soon' : (isClosed ? 'Registration Closed' : (isCapacityFull ? 'Registration Full' : (isUserRegistered ? 'Registered' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? 'Not Eligible' : 'Register Now'))))}
+                      </button>
+                    </div>
+                    <div style={{ textAlign: 'center', fontSize: '0.9rem', color: '#94a3b8', marginTop: '2rem' }}>
+                      {isNotStarted ? 'Registrations for this event have not started yet.' : (isClosed ? 'This event is no longer accepting new registrations.' : (isCapacityFull ? 'Maximum participant capacity has been reached for this event.' : 'Limited slots available, Register now to confirm your spot!'))}
                     </div>
                   </div>
-                  <button
-                    className="reg-btn"
-                    onClick={() => {
-                      if (isHardcodedFormEvent) {
-                        window.open('https://forms.gle/6YHQtLEd9Moancs39', '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      if (isMoodiEvent) {
-                        window.open('https://my.moodi.org/multicities', '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      if (!isLoggedIn) {
-                        window.location.hash = '#signin';
-                        return;
-                      }
-
-                      if (isClosed || isNotStarted) return;
-                      
-                      if (rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All') {
-                        if (user?.education?.department !== rawEvent.targetDepartment) {
-                          alert(`You are not eligible for this event.\n\nThis event is restricted to ${rawEvent.targetDepartment} students.\nYour department is ${user?.education?.department || 'not specified'}.`);
-                          return;
-                        }
-                      }
-
-                      if (currentEvent.title && (currentEvent.title.toLowerCase().includes('cohort') || currentEvent.title.toLowerCase().includes('incubation'))) {
-                        window.open('https://jecrcincubation.com/cohort-8', '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      if (rawEvent?.externalRegistrationLink) {
-                        window.open(rawEvent.externalRegistrationLink, '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      if (currentEvent.title && currentEvent.title.toLowerCase().includes('caravan')) {
-                        window.location.href = 'https://pages.razorpay.com/clubcaravan2026';
-                        return;
-                      }
-
-                      if (currentEvent.title && currentEvent.title.toLowerCase().includes('nss intake')) {
-                        window.open('https://forms.gle/jH4jKnuJMQ8NyNx99', '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      if (currentEvent.title && currentEvent.title.toLowerCase().includes('genesis')) {
-                        window.open('https://mshportal.meity.gov.in/ext/form/23966/1/apply?source=JECRC%20Incubation%20Centre&medium=post-JECRC', '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      if (currentEvent.title && currentEvent.title.toLowerCase().includes('sustainability innovation')) {
-                        window.open('https://forms.gle/8PncqNHEg5RdMWxo8', '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      if (currentEvent.title && currentEvent.title.toLowerCase().includes('cse social media')) {
-                        window.open('https://docs.google.com/forms/d/1WMTa2CtkMOwmngeMlEpuK7vz3uxKn4IRDO3dV2eotG0/viewform', '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      if (currentEvent.title && (currentEvent.title.toLowerCase().includes('fresher') || currentEvent.title.toLowerCase().includes('mrfresher'))) {
-                        window.open('https://docs.google.com/forms/d/e/1FAIpQLSdH54mUtkKk6UtzSc_6aHAzM4Kom0RJn4DvAhBwcLJYjHQykQ/viewform', '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      const isUserRegistered = currentEvent.isRegistered && !rawEvent?.allowMultipleRegistrations && !currentEvent?.allowMultipleRegistrations;
-                      if (!isUserRegistered) setShowRegister(true);
-                    }}
-                    style={{
-                      background: isNotStarted ? '#94a3b8' : (isClosed ? '#ef4444' : (currentEvent.isRegistered && !rawEvent?.allowMultipleRegistrations && !currentEvent?.allowMultipleRegistrations ? '#10b981' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? '#94a3b8' : '#0f172a'))),
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '1rem 3rem',
-                      fontSize: '1.1rem',
-                      fontWeight: 700,
-                      cursor: (isClosed || isNotStarted) ? 'not-allowed' : (currentEvent.isRegistered && !rawEvent?.allowMultipleRegistrations && !currentEvent?.allowMultipleRegistrations ? 'default' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? 'not-allowed' : 'pointer')),
-                      transition: 'background 0.2s',
-                      boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
-                    }}
-                  >
-                    {isNotStarted ? 'Coming Soon' : (isClosed ? 'Registration Closed' : (currentEvent.isRegistered && !rawEvent?.allowMultipleRegistrations && !currentEvent?.allowMultipleRegistrations ? 'Registered' : ((rawEvent?.targetDepartment && rawEvent.targetDepartment !== 'All' && user?.education?.department !== rawEvent.targetDepartment) ? 'Not Eligible' : 'Register Now')))}
-                  </button>
-                </div>
-                <div style={{ textAlign: 'center', fontSize: '0.9rem', color: '#94a3b8', marginTop: '2rem' }}>
-                  {isNotStarted ? 'Registrations for this event have not started yet.' : (isClosed ? 'This event is no longer accepting new registrations.' : 'Limited slots available, Register now to confirm your spot!')}
-                </div>
-              </div>
+                );
+              })()}
 
               {/* About Section */}
               <div className="order-4" style={{ marginBottom: '2.5rem' }}>

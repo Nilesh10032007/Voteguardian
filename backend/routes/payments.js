@@ -37,6 +37,15 @@ router.post('/create-order', requireAuth, async (req, res) => {
       status: 'completed'
     }) : null;
 
+    // Check if event is at max capacity
+    const freeCount = await Registration.countDocuments({ event: event._id });
+    const paidCount = await PaidRegistration.countDocuments({ event: event._id, status: 'completed' });
+    const totalCount = Math.max(freeCount + paidCount, event.registeredUsers?.length || 0);
+
+    if (event.capacity && Number(event.capacity) > 0 && totalCount >= Number(event.capacity)) {
+      return res.status(400).json({ message: 'Registration Full: This event has reached its maximum participant limit.' });
+    }
+
     if (existingRegistration || isAlreadyInRegisteredList) {
       return res.status(400).json({ message: 'You have already registered for this event' });
     }
