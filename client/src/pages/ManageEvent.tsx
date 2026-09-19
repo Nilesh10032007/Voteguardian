@@ -1595,6 +1595,54 @@ function ParticipantsTab({ event }: { event: any }) {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'detailed'>('list');
   const [showCheckedInModal, setShowCheckedInModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredParticipants = participants.filter((p) => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase().trim();
+
+    if (p.name && p.name.toLowerCase().includes(q)) return true;
+    if (p.email && p.email.toLowerCase().includes(q)) return true;
+    if (p.phone && p.phone.toLowerCase().includes(q)) return true;
+    if (p.type && p.type.toLowerCase().includes(q)) return true;
+    if (p.status && p.status.toLowerCase().includes(q)) return true;
+
+    if (p.answers && Array.isArray(p.answers)) {
+      const hasMatchInAnswers = p.answers.some((a: any) => {
+        const question = (a.question || '').toLowerCase();
+        let ansStr = '';
+        if (Array.isArray(a.answer)) {
+          ansStr = a.answer.join(' ').toLowerCase();
+        } else if (a.answer) {
+          ansStr = String(a.answer).toLowerCase();
+        }
+        return question.includes(q) || ansStr.includes(q);
+      });
+      if (hasMatchInAnswers) return true;
+    }
+
+    if (p.teamMembers && Array.isArray(p.teamMembers)) {
+      const hasMatchInTeam = p.teamMembers.some((m: any) => {
+        if (m.name && m.name.toLowerCase().includes(q)) return true;
+        if (m.email && m.email.toLowerCase().includes(q)) return true;
+        if (m.phone && m.phone.toLowerCase().includes(q)) return true;
+        if (m.customAnswers && Array.isArray(m.customAnswers)) {
+          return m.customAnswers.some((ca: any) => {
+            const caQ = (ca.question || '').toLowerCase();
+            let caA = '';
+            if (Array.isArray(ca.answer)) caA = ca.answer.join(' ').toLowerCase();
+            else if (ca.answer) caA = String(ca.answer).toLowerCase();
+            return caQ.includes(q) || caA.includes(q);
+          });
+        }
+        return false;
+      });
+      if (hasMatchInTeam) return true;
+    }
+
+    return false;
+  });
+
 
 
   useEffect(() => {
@@ -1805,7 +1853,21 @@ function ParticipantsTab({ event }: { event: any }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #eaeaea', padding: '12px', borderRadius: '8px' }}>
             <Search size={18} color="#888" style={{ marginRight: '12px' }} />
-            <input placeholder="Search" style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.95rem', width: '100%' }} />
+            <input
+              placeholder="Search participants by name, email, phone, ticket, status, custom answers..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '0.95rem', width: '100%' }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#888', display: 'flex', alignItems: 'center', padding: '4px' }}
+                title="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -1827,8 +1889,12 @@ function ParticipantsTab({ event }: { event: any }) {
               <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>Loading participants...</div>
             ) : participants.length === 0 ? (
               <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>No participants registered yet.</div>
+            ) : filteredParticipants.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#666', background: '#fff', borderRadius: '8px', border: '1px solid #eaeaea' }}>
+                No participants found matching "{searchTerm}".
+              </div>
             ) : viewMode === 'list' ? (
-              participants.map((p, i) => {
+              filteredParticipants.map((p, i) => {
                 const customAnswers = (p.answers || []).map((a: any) => {
                   let ansStr = a.answer || '';
                   if (Array.isArray(ansStr)) ansStr = ansStr.join(', ');
@@ -1871,7 +1937,7 @@ function ParticipantsTab({ event }: { event: any }) {
               )})
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                {participants.map((p, i) => {
+                {filteredParticipants.map((p, i) => {
                   const customAnswers = (p.answers || []).map((a: any) => {
                     let ansStr = a.answer || '';
                     if (Array.isArray(ansStr)) ansStr = ansStr.join(', ');
