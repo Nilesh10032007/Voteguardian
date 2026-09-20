@@ -1,9 +1,11 @@
 import { optimizeImage } from '../utils/optimizeImage';
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, MapPin, Search, Plus, Filter, Tag, Users, ShieldAlert, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import Footer from '../components/Footer';
 import api from '../api/axios';
 import gsap from 'gsap';
+import { getEventDetailHash } from '../utils/slug';
 
 const Home2 = () => {
   const [activeCategory, setActiveCategory] = useState('All');
@@ -388,7 +390,7 @@ const Home2 = () => {
                 key={index}
                 onClick={() => {
                   if (event && event.id && !event.id.toString().startsWith('static-')) {
-                    window.location.hash = `#event-detail-${event.id}`;
+                    window.location.hash = getEventDetailHash(event);
                   }
                 }}
                 initial={false}
@@ -510,7 +512,7 @@ const Home2 = () => {
                   filteredEvents.map(event => (
                     <motion.div
                       key={event.id}
-                      onClick={() => window.location.hash = `#event-detail-${event.id}`}
+                      onClick={() => window.location.hash = getEventDetailHash(event)}
                       whileHover="hover"
                       initial="initial"
                       variants={{

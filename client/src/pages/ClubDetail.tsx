@@ -6,6 +6,7 @@ import { api } from '../lib/api';
 import { fallbackClubs } from '../data/clubs';
 import type { Club } from '../data/clubs';
 import Footer from '../components/Footer';
+import { getEventDetailHash } from '../utils/slug';
 
 interface ClubDetailProps {
   hash: string;
@@ -385,7 +386,7 @@ export default function ClubDetail({ hash }: ClubDetailProps) {
               {clubEvents.map((event, idx) => (
                 <div 
                   key={idx} 
-                  onClick={() => window.location.hash = `#event-detail-${event._id || event.id}`}
+                  onClick={() => window.location.hash = getEventDetailHash(event)}
                   style={{ background: '#111', borderRadius: '16px', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', cursor: 'pointer' }}
                 >
                   <div style={{ height: '280px', width: '100%', background: '#000', position: 'relative' }}>

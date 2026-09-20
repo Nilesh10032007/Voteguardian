@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const QRCode = require('qrcode');
 const { transporter } = require('../utils/email');
@@ -898,17 +899,42 @@ router.get('/club/:id', async (req, res) => {
 });
 router.get('/:id', softAuth, async (req, res) => {
   try {
-    let eventModel = 'Event';
-    let event = await Event.findById(req.params.id).populate('createdBy', 'avatar logo').lean();
+    let rawParam = req.params.id;
+    let actualId = rawParam;
 
-    if (!event) {
-      event = await EventSubmission.findById(req.params.id).populate('createdBy', 'avatar logo').lean();
-      eventModel = 'EventSubmission';
+    if (rawParam.includes('--')) {
+      actualId = rawParam.split('--').pop();
+    } else if (rawParam.match(/-([a-fA-F0-9]{24})$/)) {
+      actualId = rawParam.match(/-([a-fA-F0-9]{24})$/)[1];
+    }
+
+    let eventModel = 'Event';
+    let event = null;
+
+    if (mongoose.Types.ObjectId.isValid(actualId)) {
+      event = await Event.findById(actualId).populate('createdBy', 'avatar logo').lean();
+
+      if (!event) {
+        event = await EventSubmission.findById(actualId).populate('createdBy', 'avatar logo').lean();
+        eventModel = 'EventSubmission';
+      }
+
+      if (!event) {
+        event = await ClubsEvent.findById(actualId).populate('createdBy', 'avatar logo').lean();
+        eventModel = 'ClubsEvent';
+      }
     }
 
     if (!event) {
-      event = await ClubsEvent.findById(req.params.id).populate('createdBy', 'avatar logo').lean();
-      eventModel = 'ClubsEvent';
+      const cleanSlug = rawParam.toLowerCase().trim();
+      const findBySlug = async (Model) => {
+        const list = await Model.find({}).populate('createdBy', 'avatar logo').lean();
+        return list.find(e => {
+          const s = (e.title || '').toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-');
+          return s === cleanSlug;
+        });
+      };
+      event = await findBySlug(EventSubmission) || await findBySlug(Event) || await findBySlug(ClubsEvent);
     }
 
     if (!event) return res.status(404).json({ message: 'Event not found' });

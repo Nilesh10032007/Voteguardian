@@ -6,6 +6,7 @@ import darkLogo from '../logo/dark logo.png';
 import Footer from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
 import { RichTextEditor } from '../components/RichTextEditor';
+import { getEventDetailHash } from '../utils/slug';
 
 // -------------------------------------------------------------
 // OVERVIEW TAB
@@ -734,7 +735,7 @@ function OverviewTab({ event, saveEvent }: { event: any, saveEvent: any }) {
             <button
               type="button"
               onClick={() => {
-                const link = `${window.location.origin}/#event-detail-${event?._id || event?.id}`;
+                const link = `${window.location.origin}/${getEventDetailHash(event)}`;
                 navigator.clipboard.writeText(link);
                 alert('Direct Event URL copied to clipboard!\n\n' + link);
               }}
@@ -1757,7 +1758,7 @@ function ParticipantsTab({ event }: { event: any }) {
         <button
           onClick={() => {
             if (!event) return;
-            const link = `${window.location.origin}/#event-detail-${event._id || event.id}`;
+            const link = `${window.location.origin}/${getEventDetailHash(event)}`;
             navigator.clipboard.writeText(link).then(() => {
               alert('Event link copied to clipboard!');
             }).catch(() => {

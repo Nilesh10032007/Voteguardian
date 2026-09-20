@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../api/axios';
 import { RegisterView } from '../components/SharedViews';
 import darkLogo from '../logo/dark logo.png';
+import { getEventDetailHash } from '../utils/slug';
 
 const EventDetail = ({ hash }: { hash?: string }) => {
   const { user, isLoggedIn } = useAuth();
@@ -48,6 +49,14 @@ const EventDetail = ({ hash }: { hash?: string }) => {
         const res = await api.get(`/events/${eventId}`);
         const data = res.data;
         setRawEvent(data);
+
+        // Polish browser hash URL with clean slug
+        if (data && data.title && data._id) {
+          const cleanHash = getEventDetailHash(data);
+          if (window.location.hash !== cleanHash) {
+            window.history.replaceState(null, '', cleanHash);
+          }
+        }
         setCurrentEvent({
           id: data._id,
           title: data.title,
