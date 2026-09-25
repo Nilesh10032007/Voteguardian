@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Image as ImageIcon, MapPin, Ticket, Users, ChevronDown, X, ArrowLeft } from 'lucide-react';
+import { Image as ImageIcon, MapPin, Ticket, Users, ChevronDown, X, ArrowLeft, Repeat } from 'lucide-react';
 import { api } from '../lib/api';
 
 const MOCK_LOCATIONS = [
@@ -60,6 +60,8 @@ export default function AdminCreateEvent({ eventId }: { eventId?: string }) {
   const [capacity, setCapacity] = useState('');
   const [targetDepartment, setTargetDepartment] = useState('All');
   const [generateQRCode, setGenerateQRCode] = useState(false);
+  const [visibility, setVisibility] = useState<'Public' | 'Private' | 'Unlisted'>('Public');
+  const [allowMultipleRegistrations, setAllowMultipleRegistrations] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
@@ -117,6 +119,8 @@ export default function AdminCreateEvent({ eventId }: { eventId?: string }) {
           setCapacity(data.capacity?.toString() || data.seats?.toString() || '');
           setTargetDepartment(data.targetDepartment || 'All');
           setGenerateQRCode(data.generateQRCode || false);
+          if (data.visibility) setVisibility(data.visibility);
+          if (data.allowMultipleRegistrations !== undefined) setAllowMultipleRegistrations(!!data.allowMultipleRegistrations);
 
           if (data.image || data.imageUrl) {
             setImagePreview(data.image || data.imageUrl);
@@ -175,6 +179,8 @@ export default function AdminCreateEvent({ eventId }: { eventId?: string }) {
       formData.append('seats', capacity || 'Limited');
       formData.append('targetDepartment', targetDepartment);
       formData.append('generateQRCode', String(generateQRCode));
+      formData.append('visibility', visibility);
+      formData.append('allowMultipleRegistrations', String(allowMultipleRegistrations));
       formData.append('price', ticketType === 'Paid' ? ticketPrice : 'Free');
 
       formData.append('isPaid', (ticketType === 'Paid').toString());
@@ -431,6 +437,48 @@ export default function AdminCreateEvent({ eventId }: { eventId?: string }) {
                 style={{ width: '40px', height: '24px', background: generateQRCode ? '#8B5CF6' : '#ccc', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: '0.2s' }}
               >
                 <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: generateQRCode ? '19px' : '3px', transition: '0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+              </div>
+            </div>
+
+            {/* Private Direct Link Only (Unlisted Event) Toggle */}
+            <div style={{ background: '#eaeaea', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <Users size={20} color={visibility === 'Unlisted' ? '#8B5CF6' : '#888'} />
+                <div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#555' }}>Private Direct Link Only (Unlisted Event)</div>
+                  <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '2px' }}>
+                    {visibility === 'Unlisted'
+                      ? 'ON: Hidden from Home Page & Portals. Accessible ONLY via direct URL link.'
+                      : 'OFF: Visible to normal users on Home Page & Portals.'}
+                  </div>
+                </div>
+              </div>
+              <div
+                onClick={() => setVisibility(visibility === 'Unlisted' ? 'Public' : 'Unlisted')}
+                style={{ width: '40px', height: '24px', background: visibility === 'Unlisted' ? '#8B5CF6' : '#ccc', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: '0.2s', flexShrink: 0 }}
+              >
+                <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: visibility === 'Unlisted' ? '19px' : '3px', transition: '0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+              </div>
+            </div>
+
+            {/* Allow Multiple Registrations Toggle */}
+            <div style={{ background: '#eaeaea', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <Repeat size={20} color={allowMultipleRegistrations ? '#8B5CF6' : '#888'} />
+                <div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#555' }}>Allow Multiple Registrations per User</div>
+                  <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '2px' }}>
+                    {allowMultipleRegistrations
+                      ? 'ON: Single user can register multiple times for this event.'
+                      : 'OFF: Default restriction. Users can register only once.'}
+                  </div>
+                </div>
+              </div>
+              <div
+                onClick={() => setAllowMultipleRegistrations(!allowMultipleRegistrations)}
+                style={{ width: '40px', height: '24px', background: allowMultipleRegistrations ? '#8B5CF6' : '#ccc', borderRadius: '12px', position: 'relative', cursor: 'pointer', transition: '0.2s', flexShrink: 0 }}
+              >
+                <div style={{ width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '3px', left: allowMultipleRegistrations ? '19px' : '3px', transition: '0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
               </div>
             </div>
 

@@ -8,6 +8,7 @@ const EventSubmission = require('../models/EventSubmission');
 const Notification = require('../models/Notification');
 const PaidEventDetail = require('../models/PaidEventDetail');
 const Club = require('../models/Club');
+const ClubsEvent = require('../models/ClubsEvent');
 
 // @desc    Get all users (Admin only)
 // @route   GET /api/admin/users
@@ -19,6 +20,41 @@ router.get('/users', protect, admin, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// @desc    Get all events (Admin only - includes Public, Private, Unlisted)
+// @route   GET /api/admin/events
+router.get('/events', protect, admin, async (req, res) => {
+  try {
+    const adminEvents = await Event.find({}).sort({ createdAt: -1 }).lean();
+    const clubEvents = await ClubsEvent.find({}).sort({ createdAt: -1 }).lean();
+
+    const allEventIds = [...adminEvents.map(e => e._id), ...clubEvents.map(e => e._id)];
+    const pricingDetails = await PaidEventDetail.find({ event: { $in: allEventIds } }).lean();
+    const pricingMap = {};
+    pricingDetails.forEach(p => {
+      p.isPaid = true;
+      pricingMap[p.event.toString()] = p;
+    });
+
+    const mappedAdminEvents = adminEvents.map(e => ({
+      ...e,
+      pricing: pricingMap[e._id.toString()],
+      isAdminEvent: true
+    }));
+
+    const mappedClubEvents = clubEvents.map(e => ({
+      ...e,
+      pricing: pricingMap[e._id.toString()],
+      isClubEvent: true,
+      isAdminEvent: false
+    }));
+
+    res.json([...mappedAdminEvents, ...mappedClubEvents]);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 
 // @desc    Create a new event (Admin only)
 // @route   POST /api/admin/events
@@ -48,6 +84,10 @@ router.post('/events', protect, admin, upload.single('image'), async (req, res) 
       price,
       seats,
       tag,
+      visibility: req.body.visibility || 'Public',
+      allowMultipleRegistrations: req.body.allowMultipleRegistrations === 'true' || req.body.allowMultipleRegistrations === true,
+      generateQRCode: req.body.generateQRCode === 'true' || req.body.generateQRCode === true,
+      targetDepartment: req.body.targetDepartment || 'All',
       createdBy: req.user._id
     });
 

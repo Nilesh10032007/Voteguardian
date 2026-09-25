@@ -5,13 +5,16 @@ const crypto = require('crypto');
 const { requireAuth } = require('../middleware/auth');
 const PaidEventDetail = require('../models/PaidEventDetail');
 const PaidRegistration = require('../models/PaidRegistration');
+const Registration = require('../models/Registration');
 const Event = require('../models/Event');
 const EventSubmission = require('../models/EventSubmission');
+const ClubsEvent = require('../models/ClubsEvent');
 const User = require('../models/User');
+const { transporter } = require('../utils/email');
 
 const razorpay = new Razorpay({
-  key_id: (process.env.RAZORPAY_KEY_ID || '').trim(),
-  key_secret: (process.env.RAZORPAY_KEY_SECRET || '').trim(),
+  key_id: (process.env.RAZORPAY_KEY_ID || 'rzp_live_TgFO0VtsCiu9Zq').trim(),
+  key_secret: (process.env.RAZORPAY_KEY_SECRET || 'DWN5GuZ3qnbkJbjjS3uMORzx').trim(),
 });
 
 // @desc    Create Razorpay Order
@@ -25,8 +28,11 @@ router.post('/create-order', requireAuth, async (req, res) => {
     }
 
     // 1. Check if user is already registered
-    const EventModel = eventModel === 'Event' ? Event : EventSubmission;
-    const event = await EventModel.findById(eventId);
+    const EventModel = eventModel === 'Event' ? Event : (eventModel === 'ClubsEvent' ? ClubsEvent : EventSubmission);
+    let event = await EventModel.findById(eventId);
+    if (!event) {
+      event = await Event.findById(eventId) || await EventSubmission.findById(eventId) || await ClubsEvent.findById(eventId);
+    }
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
     const isAlreadyInRegisteredList = !event.allowMultipleRegistrations && event.registeredUsers?.includes(req.user._id);
@@ -83,15 +89,28 @@ router.post('/create-order', requireAuth, async (req, res) => {
 
     // 2. Get Event Pricing Details
     const pricing = await PaidEventDetail.findOne({ event: String(eventId) });
-    if (!pricing) {
-        return res.status(404).json({ message: 'Pricing details not found for this event' });
+    let ticketPrice = pricing?.ticketPrice;
+    if (!ticketPrice || isNaN(ticketPrice)) {
+      if (req.body.unitPrice && !isNaN(req.body.unitPrice)) {
+        ticketPrice = Number(req.body.unitPrice);
+      } else if (event.pricing?.ticketPrice && !isNaN(event.pricing.ticketPrice)) {
+        ticketPrice = Number(event.pricing.ticketPrice);
+      } else if (event.price) {
+        const parsed = Number(String(event.price).replace(/[^0-9.]/g, ''));
+        if (!isNaN(parsed)) ticketPrice = parsed;
+      }
     }
 
-    if (ticketsCount > pricing.maxTicketsPerUser) {
-        return res.status(400).json({ message: `You can only purchase up to ${pricing.maxTicketsPerUser} tickets` });
+    if (!ticketPrice || isNaN(ticketPrice) || ticketPrice <= 0) {
+      return res.status(400).json({ message: 'Invalid ticket price for this event.' });
     }
 
-    const amount = Math.round(pricing.ticketPrice * ticketsCount * 100); // Amount in paise, rounded to integer
+    const maxTickets = pricing?.maxTicketsPerUser || 10;
+    if (ticketsCount > maxTickets) {
+      return res.status(400).json({ message: `You can only purchase up to ${maxTickets} tickets` });
+    }
+
+    const amount = Math.round(ticketPrice * ticketsCount * 100); // Amount in paise
 
     if (amount <= 0) {
       return res.status(400).json({ message: 'Invalid ticket price or count. Amount must be greater than zero.' });
@@ -125,7 +144,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
       event: eventId,
       eventModel: eventModel,
       razorpayOrderId: order.id,
-      amount: pricing.ticketPrice * ticketsCount,
+      amount: ticketPrice * ticketsCount,
       ticketsCount: ticketsCount,
       customAnswers: req.body.customAnswers || [],
       teamSize: req.body.teamSize || 1,
@@ -137,7 +156,7 @@ router.post('/create-order', requireAuth, async (req, res) => {
         orderId: order.id,
         amount: order.amount,
         currency: order.currency,
-        keyId: process.env.RAZORPAY_KEY_ID
+        keyId: process.env.RAZORPAY_KEY_ID || 'rzp_live_TgFO0VtsCiu9Zq'
     });
 
   } catch (error) {
@@ -197,13 +216,53 @@ router.post('/verify-payment', requireAuth, async (req, res) => {
     await registration.save();
 
     // 3. Add User to Event's Registered List
-    const EventModel = eventModel === 'Event' ? Event : EventSubmission;
-    const event = await EventModel.findById(eventId);
+    const EventModel = eventModel === 'Event' ? Event : (eventModel === 'ClubsEvent' ? ClubsEvent : EventSubmission);
+    let event = await EventModel.findById(eventId);
+    if (!event) {
+      event = await Event.findById(eventId) || await EventSubmission.findById(eventId) || await ClubsEvent.findById(eventId);
+    }
+
     if (event) {
-        if (!event.registeredUsers.includes(req.user._id)) {
-            event.registeredUsers.push(req.user._id);
-            await event.save();
+      if (!event.registeredUsers.includes(req.user._id)) {
+        event.registeredUsers.push(req.user._id);
+        await event.save();
+      }
+
+      // Send ticket email
+      if (req.user && req.user.email) {
+        try {
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; text-align: center; color: #333; max-width: 500px; margin: 0 auto; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden;">
+              <div style="background-color: #8B5CF6; color: white; padding: 20px;">
+                <h1 style="margin: 0; font-size: 24px;">Ticket Confirmed!</h1>
+                <p style="margin: 5px 0 0;">${event.title}</p>
+              </div>
+              <div style="padding: 30px;">
+                <p style="font-size: 16px; font-weight: bold;">Hello ${req.user.name || 'User'},</p>
+                <p>Your payment of <strong>₹${registration.amount}</strong> was successful!</p>
+                <p>Registration for <strong>${event.title}</strong> is confirmed.</p>
+                <div style="text-align: left; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 20px;">
+                  <p><strong>Payment ID:</strong> ${razorpay_payment_id}</p>
+                  <p><strong>Venue:</strong> ${event.venue || event.location || 'TBA'}</p>
+                  <p><strong>Date:</strong> ${event.date || event.startDate || 'TBA'}</p>
+                </div>
+              </div>
+              <div style="background-color: #f3f4f6; padding: 15px; font-size: 12px; color: #6b7280;">
+                Powered by Eventum
+              </div>
+            </div>
+          `;
+
+          await transporter.sendMail({
+            from: '"Eventum" <' + (process.env.GMAIL_USER || 'findmyevent11@gmail.com') + '>',
+            to: req.user.email,
+            subject: 'Ticket Confirmed: ' + event.title,
+            html: emailHtml
+          });
+        } catch (emailErr) {
+          console.error('Error sending paid ticket email:', emailErr);
         }
+      }
     }
 
     res.json({ message: 'Payment verified and registration successful', registration });

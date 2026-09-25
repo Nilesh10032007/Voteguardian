@@ -1365,4 +1365,9 @@ router.post('/scan', requireAuth, async (req, res) => {
   res.json({ message: "Access Granted" });
 });
 
+router.clearPublicEventsCache = () => {
+  publicEventsCache = { data: null, timestamp: 0 };
+};
+
 module.exports = router;
+

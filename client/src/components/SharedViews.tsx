@@ -484,17 +484,17 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
     }
 
     const options = {
-      key: orderData.keyId,
+      key: orderData.keyId || (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || 'rzp_live_TgFO0VtsCiu9Zq',
       amount: orderData.amount,
-      currency: orderData.currency,
-      name: 'Find My Event',
+      currency: orderData.currency || 'INR',
+      name: 'Eventum',
       description: `Registration for ${event.title}`,
       order_id: orderData.orderId,
       handler: async (response: any) => {
         setLoading(true);
         try {
           const actualEventId = event._id || (String(event.id).startsWith('api-') ? event.id.replace('api-', '') : event.id);
-          const actualModel = (event._id || String(event.id).startsWith('api-')) ? 'EventSubmission' : 'Event';
+          const actualModel = event.status ? 'EventSubmission' : (event.clubId ? 'ClubsEvent' : 'Event');
 
           await api.post('/payments/verify-payment', {
             ...response,
@@ -510,14 +510,24 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
         }
       },
       prefill: {
-        name: teamMembers[0].name,
-        email: teamMembers[0].email,
-        contact: teamMembers[0].phone
+        name: teamMembers[0]?.name || user?.name || '',
+        email: teamMembers[0]?.email || user?.email || '',
+        contact: teamMembers[0]?.phone || (user as any)?.phone || ''
+      },
+      modal: {
+        ondismiss: function() {
+          setLoading(false);
+          alert("Payment was cancelled. Registration not completed.");
+        }
       },
       theme: { color: '#8B5CF6' }
     };
 
     const rzp1 = new (window as any).Razorpay(options);
+    rzp1.on('payment.failed', function (response: any) {
+      setLoading(false);
+      alert(`Payment Failed: ${response.error?.description || 'Transaction was not successful.'}`);
+    });
     rzp1.open();
   };
 
@@ -692,6 +702,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
           eventId: actualEventId,
           eventModel: actualModel,
           ticketsCount: ticketQuantity,
+          unitPrice: numericPrice,
           teamSize: teamSize,
           teamMembers: cleanedTeamMembers,
           customAnswers: cleanedTeamMembers[0].customAnswers || []
