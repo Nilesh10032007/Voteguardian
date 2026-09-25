@@ -134,7 +134,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const [usersRes, eventsRes, approvedRes, notifsRes, clubsRes] = await Promise.all([
         api.get('/admin/users'),
-        api.get('/events'),
+        api.get('/admin/events'),
         api.get('/events/approved'),
         api.get('/notifications'),
         api.get('/admin/clubs')
