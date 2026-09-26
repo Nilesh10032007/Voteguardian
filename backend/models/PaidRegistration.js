@@ -14,7 +14,7 @@ const paidRegistrationSchema = new mongoose.Schema({
   eventModel: {
     type: String,
     required: true,
-    enum: ['Event', 'EventSubmission']
+    enum: ['Event', 'EventSubmission', 'ClubsEvent']
   },
   razorpayOrderId: {
     type: String,
@@ -39,23 +39,11 @@ const paidRegistrationSchema = new mongoose.Schema({
     required: true,
     default: 1
   },
-  customAnswers: [{
-    question: String,
-    answer: mongoose.Schema.Types.Mixed
-  }],
-  teamMembers: [{
-    name: String,
-    email: String,
-    phone: String,
-    customAnswers: [{
-      question: String,
-      answer: mongoose.Schema.Types.Mixed
-    }]
-  }],
-  status: {
-    type: String,
-    enum: ['pending', 'completed', 'failed'],
-    default: 'pending'
+  ticketType: {
+    type: String
+  },
+  selectedTicket: {
+    type: String
   },
   teamSize: {
     type: Number,
@@ -73,7 +61,12 @@ const paidRegistrationSchema = new mongoose.Schema({
   customAnswers: [{
     question: String,
     answer: mongoose.Schema.Types.Mixed
-  }]
+  }],
+  status: {
+    type: String,
+    enum: ['pending', 'completed', 'failed'],
+    default: 'pending'
+  }
 }, { timestamps: true });
 
 // Index for fast query of user registrations

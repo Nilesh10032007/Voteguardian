@@ -597,11 +597,26 @@ router.get('/registered', requireAuth, async (req, res) => {
     const paidRegistrations = await PaidRegistration.find({ user: req.user._id, status: 'completed' }).lean();
 
     const getRollNo = (eventId) => {
-      const reg = registrations.find(r => r.event.toString() === eventId.toString()) ||
-        paidRegistrations.find(r => r.event.toString() === eventId.toString());
+      const reg = paidRegistrations.find(r => r.event.toString() === eventId.toString()) ||
+        registrations.find(r => r.event.toString() === eventId.toString());
       if (reg && reg.customAnswers) {
         const rollAnswer = reg.customAnswers.find(a => a.question && a.question.toLowerCase().includes('roll'));
         if (rollAnswer) return rollAnswer.answer;
+      }
+      return null;
+    };
+
+    const getSelectedDate = (eventId) => {
+      const reg = paidRegistrations.find(r => r.event.toString() === eventId.toString()) ||
+        registrations.find(r => r.event.toString() === eventId.toString());
+      if (reg) {
+        const answers = reg.customAnswers || reg.teamMembers?.[0]?.customAnswers;
+        if (answers) {
+          const dateAns = answers.find(a => a.question && a.question.toLowerCase().includes('date'));
+          if (dateAns && dateAns.answer) {
+            return Array.isArray(dateAns.answer) ? dateAns.answer[0] : dateAns.answer;
+          }
+        }
       }
       return null;
     };
@@ -630,14 +645,15 @@ router.get('/registered', requireAuth, async (req, res) => {
         category: s.category || 'Special',
         pricing,
         qrToken,
-        rollNo: getRollNo(s._id)
+        rollNo: getRollNo(s._id),
+        selectedDate: getSelectedDate(s._id)
       };
     });
 
     const eventsWithPricing = events.map((e) => {
       const pricing = pricingMap[e._id.toString()];
       const qrToken = e.generateQRCode ? jwt.sign({ userId: req.user._id, eventId: e._id, model: 'Event' }, process.env.JWT_SECRET || 'secret') : null;
-      return { ...e, pricing, qrToken, rollNo: getRollNo(e._id) };
+      return { ...e, pricing, qrToken, rollNo: getRollNo(e._id), selectedDate: getSelectedDate(e._id) };
     });
 
     const mappedClubsEvents = clubsEvents.map((ce) => {
@@ -647,7 +663,8 @@ router.get('/registered', requireAuth, async (req, res) => {
         ...ce,
         pricing,
         qrToken,
-        rollNo: getRollNo(ce._id)
+        rollNo: getRollNo(ce._id),
+        selectedDate: getSelectedDate(ce._id)
       };
     });
 
@@ -951,11 +968,93 @@ router.get('/:id', softAuth, async (req, res) => {
       }
     }
 
+const getTicketCategoryCount = async (eventId, categoryKeyword, selectedDate = null) => {
+  const catRegex = new RegExp(categoryKeyword, 'i');
+  
+  const queryConditions = [
+    {
+      $or: [
+        { ticketType: catRegex },
+        { selectedTicket: catRegex },
+        { 'customAnswers.answer': catRegex },
+        { 'teamMembers.customAnswers.answer': catRegex }
+      ]
+    }
+  ];
+
+  if (selectedDate) {
+    let dateStr = Array.isArray(selectedDate) ? selectedDate[0] : String(selectedDate);
+    dateStr = dateStr.trim();
+    if (dateStr) {
+      let dateRegex;
+      if (dateStr.toLowerCase().includes('30')) {
+        dateRegex = /30/i;
+      } else if (dateStr.toLowerCase().includes('1')) {
+        dateRegex = /1st|1\b|oct/i;
+      } else {
+        dateRegex = new RegExp(dateStr.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i');
+      }
+
+      const dateMatchCondition = {
+        $or: [
+          { customAnswers: { $elemMatch: { question: /date/i, answer: dateRegex } } },
+          { 'teamMembers.customAnswers': { $elemMatch: { question: /date/i, answer: dateRegex } } }
+        ]
+      };
+      queryConditions.push(dateMatchCondition);
+    }
+  }
+
+  const paidCount = await PaidRegistration.countDocuments({
+    event: eventId,
+    status: 'completed',
+    $and: queryConditions
+  });
+
+  const freeCount = await Registration.countDocuments({
+    event: eventId,
+    status: { $ne: 'rejected' },
+    $and: queryConditions
+  });
+
+  return paidCount + freeCount;
+};
+
     // Parallel fetch for Pricing & Registration counts
-    const [pricing, freeCount, paidCount] = await Promise.all([
+    const [
+      pricing, freeCount, paidCount,
+      // Solo categories
+      clockCount30, clockCount1, clockCountTotal,
+      hyfitCount30, hyfitCount1, hyfitCountTotal,
+      // Duet category
+      squatCount30, squatCount1, squatCountTotal,
+      // Squad categories
+      burpeeCount30, burpeeCount1, burpeeCountTotal,
+      snakeCount30, snakeCount1, snakeCountTotal
+    ] = await Promise.all([
       PaidEventDetail.findOne({ event: event._id }).lean(),
       Registration.countDocuments({ event: event._id }),
-      PaidRegistration.countDocuments({ event: event._id, status: 'completed' })
+      PaidRegistration.countDocuments({ event: event._id, status: 'completed' }),
+
+      getTicketCategoryCount(event._id, 'clock|pushup|push-up', '30'),
+      getTicketCategoryCount(event._id, 'clock|pushup|push-up', '1'),
+      getTicketCategoryCount(event._id, 'clock|pushup|push-up', null),
+
+      getTicketCategoryCount(event._id, 'hyfit|hylift|high lift|hy-fit|hy-lift', '30'),
+      getTicketCategoryCount(event._id, 'hyfit|hylift|high lift|hy-fit|hy-lift', '1'),
+      getTicketCategoryCount(event._id, 'hyfit|hylift|high lift|hy-fit|hy-lift', null),
+
+      getTicketCategoryCount(event._id, 'squat|friends who squat', '30'),
+      getTicketCategoryCount(event._id, 'squat|friends who squat', '1'),
+      getTicketCategoryCount(event._id, 'squat|friends who squat', null),
+
+      getTicketCategoryCount(event._id, 'burpee|broad jump|broad trump|color challenge', '30'),
+      getTicketCategoryCount(event._id, 'burpee|broad jump|broad trump|color challenge', '1'),
+      getTicketCategoryCount(event._id, 'burpee|broad jump|broad trump|color challenge', null),
+
+      getTicketCategoryCount(event._id, 'snake|ladder', '30'),
+      getTicketCategoryCount(event._id, 'snake|ladder', '1'),
+      getTicketCategoryCount(event._id, 'snake|ladder', null)
     ]);
 
     if (pricing) {
@@ -972,6 +1071,47 @@ router.get('/:id', softAuth, async (req, res) => {
     eventObj.isRegistered = event.isRegistered;
     eventObj.totalRegistrationsCount = totalCount;
     eventObj.isFull = !!isFull;
+    eventObj.ticketCategoryCounts = {
+      'Clock Pushup': clockCountTotal,
+      'Clock Push-Up': clockCountTotal,
+      'Hyfit': hyfitCountTotal,
+      'High Lift': hyfitCountTotal,
+      'Hylift': hyfitCountTotal,
+      'Friends who squat together + As far as possible': squatCountTotal,
+      'Burpee Color Challenge + Broad Jump Relay': burpeeCountTotal,
+      'Snake and Ladder ': snakeCountTotal,
+      'Snake and Ladder': snakeCountTotal,
+      'byDate': {
+        '30th Sep': {
+          'Clock Pushup': clockCount30, 'Clock Push-Up': clockCount30,
+          'Hyfit': hyfitCount30, 'High Lift': hyfitCount30, 'Hylift': hyfitCount30,
+          'Friends who squat together + As far as possible': squatCount30,
+          'Burpee Color Challenge + Broad Jump Relay': burpeeCount30,
+          'Snake and Ladder ': snakeCount30, 'Snake and Ladder': snakeCount30
+        },
+        '30': {
+          'Clock Pushup': clockCount30, 'Clock Push-Up': clockCount30,
+          'Hyfit': hyfitCount30, 'High Lift': hyfitCount30, 'Hylift': hyfitCount30,
+          'Friends who squat together + As far as possible': squatCount30,
+          'Burpee Color Challenge + Broad Jump Relay': burpeeCount30,
+          'Snake and Ladder ': snakeCount30, 'Snake and Ladder': snakeCount30
+        },
+        '1st Oct': {
+          'Clock Pushup': clockCount1, 'Clock Push-Up': clockCount1,
+          'Hyfit': hyfitCount1, 'High Lift': hyfitCount1, 'Hylift': hyfitCount1,
+          'Friends who squat together + As far as possible': squatCount1,
+          'Burpee Color Challenge + Broad Jump Relay': burpeeCount1,
+          'Snake and Ladder ': snakeCount1, 'Snake and Ladder': snakeCount1
+        },
+        '1': {
+          'Clock Pushup': clockCount1, 'Clock Push-Up': clockCount1,
+          'Hyfit': hyfitCount1, 'High Lift': hyfitCount1, 'Hylift': hyfitCount1,
+          'Friends who squat together + As far as possible': squatCount1,
+          'Burpee Color Challenge + Broad Jump Relay': burpeeCount1,
+          'Snake and Ladder ': snakeCount1, 'Snake and Ladder': snakeCount1
+        }
+      }
+    };
 
     res.json(eventObj);
   } catch (error) {
@@ -1198,6 +1338,44 @@ router.post('/:id/register', requireAuth, async (req, res) => {
 
     if (event.capacity && Number(event.capacity) > 0 && totalCount >= Number(event.capacity)) {
       return res.status(400).json({ message: 'Registration Full: This event has reached its maximum participant limit.' });
+    }
+
+    // Extract date custom answer if present
+    const customAnswers = req.body.customAnswers || req.body.teamMembers?.[0]?.customAnswers || [];
+    const dateAnsObj = customAnswers.find(a => a.question && a.question.toLowerCase().includes('date'));
+    const selectedDate = dateAnsObj ? (Array.isArray(dateAnsObj.answer) ? dateAnsObj.answer[0] : dateAnsObj.answer) : null;
+
+    // Physiofest Special Category Limit Checks (Per day limits)
+    const targetCategory = req.body.ticketType || req.body.selectedTicket || req.body.ticketCategory || '';
+    const lowerCat = String(targetCategory).toLowerCase();
+    const eventIdStr = String(event._id || '');
+
+    const isPhysiofestEvent = ['6ab6af8e184956bd944ba2be', '6ab6b0d1184956bd944ba2bf', '6ab6b159184956bd944ba2c0'].includes(eventIdStr) ||
+      (event.title && (event.title.toLowerCase().includes('solo') || event.title.toLowerCase().includes('duet') || event.title.toLowerCase().includes('squad')));
+
+    if (isPhysiofestEvent) {
+      let limitConfig = null;
+
+      if (lowerCat.includes('clock') || lowerCat.includes('pushup') || lowerCat.includes('push-up')) {
+        limitConfig = { keyword: 'clock|pushup|push-up', name: 'Clock Push-Up', max: 10 };
+      } else if (lowerCat.includes('hyfit') || lowerCat.includes('hylift') || lowerCat.includes('high lift') || lowerCat.includes('hy-fit') || lowerCat.includes('hy-lift')) {
+        limitConfig = { keyword: 'hyfit|hylift|high lift|hy-fit|hy-lift', name: 'Hyfit', max: 10 };
+      } else if (lowerCat.includes('squat') || lowerCat.includes('friends who squat')) {
+        limitConfig = { keyword: 'squat|friends who squat', name: 'Friends Who Squat', max: 20 };
+      } else if (lowerCat.includes('burpee') || lowerCat.includes('broad jump') || lowerCat.includes('broad trump') || lowerCat.includes('color challenge')) {
+        limitConfig = { keyword: 'burpee|broad jump|broad trump|color challenge', name: 'Burpee Color Challenge + Broad Jump Relay', max: 20 };
+      } else if (lowerCat.includes('snake') || lowerCat.includes('ladder')) {
+        limitConfig = { keyword: 'snake|ladder', name: 'Snake and Ladder', max: 10 };
+      }
+
+      if (limitConfig) {
+        const categoryCount = await getTicketCategoryCount(event._id, limitConfig.keyword, selectedDate);
+        if (categoryCount >= limitConfig.max) {
+          return res.status(400).json({
+            message: `Registration Full: Maximum limit of ${limitConfig.max} participants for ${limitConfig.name}${selectedDate ? ` on ${selectedDate}` : ''} has been reached.`
+          });
+        }
+      }
     }
 
     // Check if user is already registered

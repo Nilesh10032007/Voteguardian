@@ -754,7 +754,9 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
           unitPrice: numericPrice,
           teamSize: teamSize,
           teamMembers: cleanedTeamMembers,
-          customAnswers: cleanedTeamMembers[0].customAnswers || []
+          customAnswers: cleanedTeamMembers[0].customAnswers || [],
+          selectedTicket: selectedTicket,
+          ticketType: selectedTicket
         });
 
         await handleRazorpayPayment(orderData);
@@ -1272,47 +1274,122 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                 </motion.div>
 
                 {/* Tickets / Passes - Show only on last step or independently */}
-                {currentStep === teamSize - 1 && event.tickets && event.tickets.length > 0 && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '1rem' }}>
-                    <label style={{ fontSize: '0.9rem', fontWeight: 800, color: '#111827' }}>Select Pass / Ticket</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {event.tickets.map((t: any, i: number) => {
-                        const isFree = t.price === 'Free' || t.price === '0';
-                        const isSelected = selectedTicket === t.category;
-                        return (
-                          <div
-                            key={i}
-                            onClick={() => { setSelectedTicket(t.category); if (!isFree) setTicketQuantity(1); }}
-                            style={{
-                              padding: '1rem',
-                              border: isSelected ? '2px solid #8B5CF6' : '1px solid #e2e8f0',
-                              borderRadius: '12px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              background: isSelected ? '#F5F3FF' : '#fff'
-                            }}
-                          >
-                            <div>
-                              <p style={{ margin: 0, fontWeight: 700, color: '#1e293b' }}>{t.category}</p>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                              <span style={{ fontWeight: 800, color: '#8B5CF6' }}>
-                                {isFree ? 'Free' : `₹${t.price}`}
-                              </span>
-                              {isSelected && (
-                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#8B5CF6', background: 'rgba(139, 92, 246, 0.1)', padding: '4px 10px', borderRadius: '20px' }}>
-                                  Selected ✓
+                {currentStep === teamSize - 1 && event.tickets && event.tickets.length > 0 && (() => {
+                  const leaderDateAnswer = teamMembers[0]?.customAnswers?.find((a: any) => a.question && a.question.toLowerCase().includes('date'))?.answer;
+                  const selectedDateStr = Array.isArray(leaderDateAnswer) ? leaderDateAnswer[0] : (leaderDateAnswer || '');
+
+                  return (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '1rem' }}>
+                      <label style={{ fontSize: '0.9rem', fontWeight: 800, color: '#111827' }}>Select Pass / Ticket</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {event.tickets.map((t: any, i: number) => {
+                          const isFree = t.price === 'Free' || t.price === '0';
+                          const catName = t.category || '';
+                          const lowerCat = catName.toLowerCase();
+
+                          let categoryCount = 0;
+                          const byDateCounts = event.ticketCategoryCounts?.byDate;
+
+                          if (selectedDateStr && byDateCounts) {
+                            let matchedDateObj = byDateCounts[selectedDateStr];
+                            if (!matchedDateObj) {
+                              if (selectedDateStr.toLowerCase().includes('30')) {
+                                matchedDateObj = byDateCounts['30th Sep'] || byDateCounts['30'];
+                              } else if (selectedDateStr.toLowerCase().includes('1')) {
+                                matchedDateObj = byDateCounts['1st Oct'] || byDateCounts['1'];
+                              }
+                            }
+                            if (matchedDateObj) {
+                              categoryCount = matchedDateObj[t.category] ?? 0;
+                              if (categoryCount === 0) {
+                                if (lowerCat.includes('clock') || lowerCat.includes('pushup') || lowerCat.includes('push-up')) {
+                                  categoryCount = matchedDateObj['Clock Pushup'] || matchedDateObj['Clock Push-Up'] || 0;
+                                } else if (lowerCat.includes('hyfit') || lowerCat.includes('hylift') || lowerCat.includes('high lift') || lowerCat.includes('hy-fit') || lowerCat.includes('hy-lift')) {
+                                  categoryCount = matchedDateObj['Hyfit'] || matchedDateObj['Hylift'] || matchedDateObj['High Lift'] || 0;
+                                }
+                              }
+                            } else {
+                              categoryCount = event.ticketCategoryCounts?.[t.category] ?? 0;
+                            }
+                          } else {
+                            categoryCount = event.ticketCategoryCounts?.[t.category];
+                            if (categoryCount === undefined) {
+                              if (lowerCat.includes('clock') || lowerCat.includes('pushup') || lowerCat.includes('push-up')) {
+                                categoryCount = event.ticketCategoryCounts?.['Clock Pushup'] || event.ticketCategoryCounts?.['Clock Push-Up'] || 0;
+                              } else if (lowerCat.includes('hyfit') || lowerCat.includes('hylift') || lowerCat.includes('high lift') || lowerCat.includes('hy-fit') || lowerCat.includes('hy-lift')) {
+                                categoryCount = event.ticketCategoryCounts?.['Hyfit'] || event.ticketCategoryCounts?.['Hylift'] || event.ticketCategoryCounts?.['High Lift'] || 0;
+                              } else {
+                                categoryCount = 0;
+                              }
+                            }
+                          }
+
+                          const eventIdStr = String(event._id || event.id || '');
+                          const isPhysiofestEvent = ['6ab6af8e184956bd944ba2be', '6ab6b0d1184956bd944ba2bf', '6ab6b159184956bd944ba2c0'].includes(eventIdStr) ||
+                            (event.title && (event.title.toLowerCase().includes('solo') || event.title.toLowerCase().includes('duet') || event.title.toLowerCase().includes('squad')));
+
+                          let maxLimit = 0;
+                          if (isPhysiofestEvent) {
+                            if (lowerCat.includes('clock') || lowerCat.includes('pushup') || lowerCat.includes('push-up') ||
+                                lowerCat.includes('hyfit') || lowerCat.includes('hylift') || lowerCat.includes('high lift') || lowerCat.includes('hy-fit') || lowerCat.includes('hy-lift')) {
+                              maxLimit = 10;
+                            } else if (lowerCat.includes('squat') || lowerCat.includes('friends who squat')) {
+                              maxLimit = 20;
+                            } else if (lowerCat.includes('burpee') || lowerCat.includes('broad jump') || lowerCat.includes('broad trump') || lowerCat.includes('color challenge')) {
+                              maxLimit = 20;
+                            } else if (lowerCat.includes('snake') || lowerCat.includes('ladder')) {
+                              maxLimit = 10;
+                            }
+                          }
+                          const isCategoryLimited = maxLimit > 0;
+                          const isCategoryFull = maxLimit > 0 && categoryCount >= maxLimit;
+
+                          const isSelected = selectedTicket === t.category;
+
+                          return (
+                            <div
+                              key={i}
+                              onClick={() => {
+                                if (isCategoryFull) return;
+                                setSelectedTicket(t.category);
+                                if (!isFree) setTicketQuantity(1);
+                              }}
+                              style={{
+                                padding: '1rem',
+                                border: isSelected ? '2px solid #8B5CF6' : (isCategoryFull ? '1px solid #fca5a5' : '1px solid #e2e8f0'),
+                                borderRadius: '12px',
+                                cursor: isCategoryFull ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                background: isSelected ? '#F5F3FF' : (isCategoryFull ? '#fef2f2' : '#fff'),
+                                opacity: isCategoryFull ? 0.75 : 1
+                              }}
+                            >
+                              <div>
+                                <p style={{ margin: 0, fontWeight: 700, color: isCategoryFull ? '#991b1b' : '#1e293b' }}>{t.category}</p>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <span style={{ fontWeight: 800, color: isCategoryFull ? '#dc2626' : '#8B5CF6' }}>
+                                  {isFree ? 'Free' : `₹${t.price}`}
                                 </span>
-                              )}
+                                {isCategoryFull ? (
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '4px 10px', borderRadius: '20px' }}>
+                                    FULL
+                                  </span>
+                                ) : isSelected ? (
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#8B5CF6', background: 'rgba(139, 92, 246, 0.1)', padding: '4px 10px', borderRadius: '20px' }}>
+                                    Selected ✓
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </motion.div>
-                )}
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  );
+                })()}
 
                 {/* Total Amount Counter */}
                 {currentStep === teamSize - 1 && numericPrice > 0 && (

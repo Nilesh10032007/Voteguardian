@@ -29,6 +29,44 @@ export default function RegisteredEvents() {
   };
 
   const parseDateInfo = (dateStr: string, ev?: any) => {
+    if (ev?.selectedDate) {
+      const sDate = String(ev.selectedDate).trim();
+      if (sDate.toLowerCase().includes('1') && !sDate.toLowerCase().includes('30')) {
+        return {
+          day: '1',
+          month: 'October',
+          shortMonth: 'OCT',
+          weekday: 'Thursday',
+          fullDate: 'Thursday, 1st Oct 2026',
+          time: ev?.time || '14:00',
+          timelineDate: '1st Oct',
+          timelineDay: 'Thursday'
+        };
+      } else if (sDate.toLowerCase().includes('30')) {
+        return {
+          day: '30',
+          month: 'September',
+          shortMonth: 'SEP',
+          weekday: 'Wednesday',
+          fullDate: 'Wednesday, 30th Sep 2026',
+          time: ev?.time || '14:00',
+          timelineDate: '30th Sep',
+          timelineDay: 'Wednesday'
+        };
+      } else {
+        return {
+          day: '📅',
+          month: '',
+          shortMonth: 'DATE',
+          weekday: '',
+          fullDate: sDate,
+          time: ev?.time || 'TBA',
+          timelineDate: sDate,
+          timelineDay: ''
+        };
+      }
+    }
+
     if (!dateStr) {
       return { day: '📅', month: '', shortMonth: 'DATE', weekday: '', fullDate: 'TBA', time: ev?.time || 'TBA', timelineDate: 'TBA', timelineDay: '' };
     }
@@ -463,6 +501,12 @@ export default function RegisteredEvents() {
                   <span style={{ color: '#6b7280', fontSize: '0.9rem', flexShrink: 0 }}>Attendee</span>
                   <span style={{ fontWeight: 600, color: '#111', textAlign: 'right', wordBreak: 'break-word' }}>{user?.name || 'You'}</span>
                 </div>
+                {selectedTicket.selectedDate && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.75rem' }}>
+                    <span style={{ color: '#6b7280', fontSize: '0.9rem', flexShrink: 0 }}>Ticket Date</span>
+                    <span style={{ fontWeight: 700, color: '#8B5CF6', textAlign: 'right' }}>{selectedTicket.selectedDate}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                   <span style={{ color: '#6b7280', fontSize: '0.9rem', flexShrink: 0 }}>{selectedTicket.rollNo ? 'Roll No' : 'Registration ID'}</span>
                   <span style={{ fontWeight: 800, color: '#8B5CF6', textAlign: 'right', wordBreak: 'break-all' }}>{selectedTicket.rollNo || selectedTicket._id?.substring(0, 8).toUpperCase()}</span>

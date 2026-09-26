@@ -17,6 +17,58 @@ const razorpay = new Razorpay({
   key_secret: (process.env.RAZORPAY_KEY_SECRET || 'DWN5GuZ3qnbkJbjjS3uMORzx').trim(),
 });
 
+const getTicketCategoryCount = async (eventId, categoryKeyword, selectedDate = null) => {
+  const catRegex = new RegExp(categoryKeyword, 'i');
+  
+  const queryConditions = [
+    {
+      $or: [
+        { ticketType: catRegex },
+        { selectedTicket: catRegex },
+        { 'customAnswers.answer': catRegex },
+        { 'teamMembers.customAnswers.answer': catRegex }
+      ]
+    }
+  ];
+
+  if (selectedDate) {
+    let dateStr = Array.isArray(selectedDate) ? selectedDate[0] : String(selectedDate);
+    dateStr = dateStr.trim();
+    if (dateStr) {
+      let dateRegex;
+      if (dateStr.toLowerCase().includes('30')) {
+        dateRegex = /30/i;
+      } else if (dateStr.toLowerCase().includes('1')) {
+        dateRegex = /1st|1\b|oct/i;
+      } else {
+        dateRegex = new RegExp(dateStr.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i');
+      }
+
+      const dateMatchCondition = {
+        $or: [
+          { customAnswers: { $elemMatch: { question: /date/i, answer: dateRegex } } },
+          { 'teamMembers.customAnswers': { $elemMatch: { question: /date/i, answer: dateRegex } } }
+        ]
+      };
+      queryConditions.push(dateMatchCondition);
+    }
+  }
+
+  const paidCount = await PaidRegistration.countDocuments({
+    event: eventId,
+    status: 'completed',
+    $and: queryConditions
+  });
+
+  const freeCount = await Registration.countDocuments({
+    event: eventId,
+    status: { $ne: 'rejected' },
+    $and: queryConditions
+  });
+
+  return paidCount + freeCount;
+};
+
 // @desc    Create Razorpay Order
 // @route   POST /api/payments/create-order
 router.post('/create-order', requireAuth, async (req, res) => {
@@ -34,6 +86,44 @@ router.post('/create-order', requireAuth, async (req, res) => {
       event = await Event.findById(eventId) || await EventSubmission.findById(eventId) || await ClubsEvent.findById(eventId);
     }
     if (!event) return res.status(404).json({ message: 'Event not found' });
+
+    // Extract date custom answer if present
+    const customAnswers = req.body.customAnswers || req.body.teamMembers?.[0]?.customAnswers || [];
+    const dateAnsObj = customAnswers.find(a => a.question && a.question.toLowerCase().includes('date'));
+    const selectedDate = dateAnsObj ? (Array.isArray(dateAnsObj.answer) ? dateAnsObj.answer[0] : dateAnsObj.answer) : null;
+
+    // Physiofest Special Category Limit Checks (Per day limits)
+    const targetCategory = req.body.selectedTicket || req.body.ticketType || req.body.ticketCategory || '';
+    const lowerCat = String(targetCategory).toLowerCase();
+    const eventIdStr = String(event._id || '');
+
+    const isPhysiofestEvent = ['6ab6af8e184956bd944ba2be', '6ab6b0d1184956bd944ba2bf', '6ab6b159184956bd944ba2c0'].includes(eventIdStr) ||
+      (event.title && (event.title.toLowerCase().includes('solo') || event.title.toLowerCase().includes('duet') || event.title.toLowerCase().includes('squad')));
+
+    if (isPhysiofestEvent) {
+      let limitConfig = null;
+
+      if (lowerCat.includes('clock') || lowerCat.includes('pushup') || lowerCat.includes('push-up')) {
+        limitConfig = { keyword: 'clock|pushup|push-up', name: 'Clock Push-Up', max: 10 };
+      } else if (lowerCat.includes('hyfit') || lowerCat.includes('hylift') || lowerCat.includes('high lift') || lowerCat.includes('hy-fit') || lowerCat.includes('hy-lift')) {
+        limitConfig = { keyword: 'hyfit|hylift|high lift|hy-fit|hy-lift', name: 'Hyfit', max: 10 };
+      } else if (lowerCat.includes('squat') || lowerCat.includes('friends who squat')) {
+        limitConfig = { keyword: 'squat|friends who squat', name: 'Friends Who Squat', max: 20 };
+      } else if (lowerCat.includes('burpee') || lowerCat.includes('broad jump') || lowerCat.includes('broad trump') || lowerCat.includes('color challenge')) {
+        limitConfig = { keyword: 'burpee|broad jump|broad trump|color challenge', name: 'Burpee Color Challenge + Broad Jump Relay', max: 20 };
+      } else if (lowerCat.includes('snake') || lowerCat.includes('ladder')) {
+        limitConfig = { keyword: 'snake|ladder', name: 'Snake and Ladder', max: 10 };
+      }
+
+      if (limitConfig) {
+        const categoryCount = await getTicketCategoryCount(event._id, limitConfig.keyword, selectedDate);
+        if (categoryCount >= limitConfig.max) {
+          return res.status(400).json({
+            message: `Registration Full: Maximum limit of ${limitConfig.max} participants for ${limitConfig.name}${selectedDate ? ` on ${selectedDate}` : ''} has been reached.`
+          });
+        }
+      }
+    }
 
     const isAlreadyInRegisteredList = !event.allowMultipleRegistrations && event.registeredUsers?.includes(req.user._id);
 
@@ -90,14 +180,19 @@ router.post('/create-order', requireAuth, async (req, res) => {
     // 2. Get Event Pricing Details
     const pricing = await PaidEventDetail.findOne({ event: String(eventId) });
     let ticketPrice = pricing?.ticketPrice;
-    if (!ticketPrice || isNaN(ticketPrice)) {
-      if (req.body.unitPrice && !isNaN(req.body.unitPrice)) {
+    if (!ticketPrice || isNaN(ticketPrice) || ticketPrice <= 0) {
+      if (req.body.unitPrice && !isNaN(req.body.unitPrice) && Number(req.body.unitPrice) > 0) {
         ticketPrice = Number(req.body.unitPrice);
-      } else if (event.pricing?.ticketPrice && !isNaN(event.pricing.ticketPrice)) {
-        ticketPrice = Number(event.pricing.ticketPrice);
-      } else if (event.price) {
-        const parsed = Number(String(event.price).replace(/[^0-9.]/g, ''));
-        if (!isNaN(parsed)) ticketPrice = parsed;
+      } else {
+        const selectedTicketObj = event.tickets?.find((t) => t.category === targetCategory || t.category?.toLowerCase() === targetCategory.toLowerCase());
+        if (selectedTicketObj?.price && !isNaN(selectedTicketObj.price) && Number(selectedTicketObj.price) > 0) {
+          ticketPrice = Number(selectedTicketObj.price);
+        } else if (event.pricing?.ticketPrice && !isNaN(event.pricing.ticketPrice) && Number(event.pricing.ticketPrice) > 0) {
+          ticketPrice = Number(event.pricing.ticketPrice);
+        } else if (event.price) {
+          const parsed = Number(String(event.price).replace(/[^0-9.]/g, ''));
+          if (!isNaN(parsed) && parsed > 0) ticketPrice = parsed;
+        }
       }
     }
 
@@ -146,6 +241,8 @@ router.post('/create-order', requireAuth, async (req, res) => {
       razorpayOrderId: order.id,
       amount: ticketPrice * ticketsCount,
       ticketsCount: ticketsCount,
+      ticketType: req.body.selectedTicket || req.body.ticketType || '',
+      selectedTicket: req.body.selectedTicket || req.body.ticketType || '',
       customAnswers: req.body.customAnswers || [],
       teamSize: req.body.teamSize || 1,
       teamMembers: req.body.teamMembers || [],
