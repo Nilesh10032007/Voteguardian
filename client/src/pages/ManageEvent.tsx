@@ -2634,35 +2634,68 @@ export default function ManageEvent() {
         {/* Header & Button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           {isEditingTitle ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <input
                 autoFocus
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
                 onKeyDown={async (e) => {
                   if (e.key === 'Enter') {
-                    const success = await saveEvent({ title: editedTitle });
+                    if (!editedTitle.trim()) {
+                      alert('Event name cannot be empty');
+                      return;
+                    }
+                    const success = await saveEvent({ title: editedTitle.trim() });
                     if (success) setIsEditingTitle(false);
                   } else if (e.key === 'Escape') {
                     setIsEditingTitle(false);
                     setEditedTitle(eventData?.title || '');
                   }
                 }}
-                onBlur={() => {
+                style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0, padding: '4px 12px', border: '2px solid #7c3aed', borderRadius: '8px', outline: 'none', background: '#fff', color: '#111', minWidth: '280px' }}
+              />
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={async () => {
+                  if (!editedTitle.trim()) {
+                    alert('Event name cannot be empty');
+                    return;
+                  }
+                  const success = await saveEvent({ title: editedTitle.trim() });
+                  if (success) setIsEditingTitle(false);
+                }}
+                style={{ background: '#22c55e', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <Check size={16} /> Save
+              </button>
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
                   setIsEditingTitle(false);
                   setEditedTitle(eventData?.title || '');
                 }}
-                style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, padding: '0 8px', border: '2px solid #7c3aed', borderRadius: '8px', outline: 'none', background: '#fff', color: '#111' }}
-              />
-              <button onClick={async () => {
-                const success = await saveEvent({ title: editedTitle });
-                if (success) setIsEditingTitle(false);
-              }} style={{ background: '#22c55e', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 12px', cursor: 'pointer', fontWeight: 700 }}>Save</button>
+                style={{ background: '#eaeaea', color: '#555', border: 'none', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
+              >
+                Cancel
+              </button>
             </div>
           ) : (
-            <h1 onClick={() => setIsEditingTitle(true)} style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, cursor: 'pointer' }} title="Click to edit">
-              {eventData?.title || 'Event Name'}<span style={{ color: '#ec4899' }}>.</span>
-            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1
+                onClick={() => setIsEditingTitle(true)}
+                style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                title="Click to edit event title"
+              >
+                {eventData?.title || 'Event Name'}<span style={{ color: '#ec4899' }}>.</span>
+              </h1>
+              <button
+                onClick={() => setIsEditingTitle(true)}
+                style={{ background: '#f3e8ff', color: '#7c3aed', border: 'none', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                title="Edit Event Title"
+              >
+                <Edit2 size={14} /> Edit Title
+              </button>
+            </div>
           )}
 
         </div>
