@@ -657,12 +657,6 @@ const EventDetail = ({ hash }: { hash?: string }) => {
                             window.open('https://docs.google.com/forms/d/1WMTa2CtkMOwmngeMlEpuK7vz3uxKn4IRDO3dV2eotG0/viewform', '_blank', 'noopener,noreferrer');
                             return;
                           }
-
-                          if (currentEvent.title && (currentEvent.title.toLowerCase().includes('fresher') || currentEvent.title.toLowerCase().includes('mrfresher'))) {
-                            window.open('https://docs.google.com/forms/d/e/1FAIpQLSdH54mUtkKk6UtzSc_6aHAzM4Kom0RJn4DvAhBwcLJYjHQykQ/viewform', '_blank', 'noopener,noreferrer');
-                            return;
-                          }
-
                           if (!isUserRegistered) setShowRegister(true);
                         }}
                         style={{
