@@ -800,11 +800,11 @@ router.post('/scan-public', async (req, res) => {
 });
 
 // @desc    Get events for a specific club by club's custom ID
-// @route   GET /api/events/club/:id
 router.get('/club/:id', async (req, res) => {
   try {
     const mongoose = require('mongoose');
     const Club = require('../models/Club');
+    const User = require('../models/User');
     const param = req.params.id;
 
     let club = await Club.findOne({ id: param });
@@ -819,83 +819,72 @@ router.get('/club/:id', async (req, res) => {
       return res.status(404).json({ message: 'Club not found' });
     }
 
-    const isInitiativeCheck = (c) => {
-      if (!c) return false;
-      const typeStr = (c.type || '').toLowerCase();
-      if (typeStr === 'initiative' || typeStr === 'centre' || typeStr === 'center') return true;
-      const nameStr = (c.name || '').toLowerCase();
-      const idStr = (c.id || '').toLowerCase();
-      const keywords = ['initiative', 'center', 'centre', 'jic', 'incubation', 'cell', 'outreach', 'makerspace', 'mpower', 'zarurat', 'nss', 'upscale'];
-      return keywords.some(k => nameStr.includes(k) || idStr.includes(k));
-    };
-
-    const isInitiative = isInitiativeCheck(club);
     const clubIdStr = club._id.toString();
     const clubCustomId = club.id || '';
     const clubName = club.name || '';
 
-    let targetQuery = [];
-    if (isInitiative) {
-      targetQuery = [
+    // Find associated user IDs (organizer accounts or club members)
+    const clubUsers = await User.find({
+      $or: [
         { clubId: club._id },
-        { targetInitiativeMode: 'All Initiatives' },
-        { targetInitiativeMode: { $exists: false } },
-        { targetInitiatives: { $in: [clubIdStr, clubCustomId, clubName] } }
-      ];
-    } else {
-      targetQuery = [
-        { clubId: club._id },
-        { targetClubMode: 'All Clubs' },
-        { targetClubMode: { $exists: false } },
-        { targetClubs: { $in: [clubIdStr, clubCustomId, clubName] } }
-      ];
+        ...(club.organizerAccount ? [{ _id: club.organizerAccount }] : [])
+      ]
+    }).select('_id').lean();
+    const clubUserIds = clubUsers.map(u => u._id);
+
+    const escapeRegex = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    const nameRegex = clubName ? new RegExp(escapeRegex(clubName), 'i') : null;
+    const customIdRegex = clubCustomId ? new RegExp(`^${escapeRegex(clubCustomId)}$`, 'i') : null;
+
+    // 1. ClubsEvent query: matches clubId, organizer, or target arrays
+    let clubsEventQuery = [
+      { clubId: club._id },
+      { targetInitiatives: { $in: [clubIdStr, clubCustomId, clubName] } },
+      { targetClubs: { $in: [clubIdStr, clubCustomId, clubName] } }
+    ];
+    if (nameRegex) clubsEventQuery.push({ organizer: nameRegex });
+    if (customIdRegex) clubsEventQuery.push({ organizer: customIdRegex });
+
+    // 2. EventSubmission query: matches organizer (user) or target arrays
+    let submissionQuery = [
+      { targetInitiatives: { $in: [clubIdStr, clubCustomId, clubName] } },
+      { targetClubs: { $in: [clubIdStr, clubCustomId, clubName] } }
+    ];
+    if (clubUserIds.length > 0) {
+      submissionQuery.push({ organizer: { $in: clubUserIds } });
     }
 
+    // 3. Admin Event query: matches organizer or target arrays
+    let adminEventQuery = [
+      { targetInitiatives: { $in: [clubIdStr, clubCustomId, clubName] } },
+      { targetClubs: { $in: [clubIdStr, clubCustomId, clubName] } }
+    ];
+    if (nameRegex) adminEventQuery.push({ organizer: nameRegex });
+    if (customIdRegex) adminEventQuery.push({ organizer: customIdRegex });
+
     const rawClubsEvents = await ClubsEvent.find({
-      $or: targetQuery,
+      $or: clubsEventQuery,
       visibility: { $nin: ['Private', 'Unlisted'] }
     }).sort({ createdAt: -1 }).lean();
 
     const rawSubmissions = await EventSubmission.find({
       status: 'approved',
       withdrawalStatus: { $ne: 'approved' },
-      $or: targetQuery,
+      $or: submissionQuery,
       visibility: { $nin: ['Private', 'Unlisted'] }
     }).sort({ createdAt: -1 }).lean();
 
     const rawAdminEvents = await Event.find({
-      $or: targetQuery,
+      $or: adminEventQuery,
       visibility: { $nin: ['Private', 'Unlisted'] }
     }).sort({ date: 1 }).lean();
 
-    const rawEvents = [...rawClubsEvents, ...rawSubmissions, ...rawAdminEvents];
-
-    const events = rawEvents.filter(e => {
-      // Always allow an event to show on the portal of the Club/Initiative that created/owns it
-      const isOwnerClub = (e.clubId && e.clubId.toString() === clubIdStr) ||
-        (e.organizer && clubName && e.organizer.toString().toLowerCase() === clubName.toLowerCase());
-      if (isOwnerClub) return true;
-
-      if (isInitiative) {
-        const mode = e.targetInitiativeMode || 'All Initiatives';
-        if (mode === 'No Initiative') return false;
-        if (mode === 'Selected Initiatives') {
-          const targets = Array.isArray(e.targetInitiatives) ? e.targetInitiatives : [];
-          const matches = targets.some(t => t === clubIdStr || t === clubCustomId || t === clubName);
-          if (!matches) return false;
-        }
-        return true;
-      } else {
-        const mode = e.targetClubMode || 'All Clubs';
-        if (mode === 'No Club') return false;
-        if (mode === 'Selected Clubs') {
-          const targets = Array.isArray(e.targetClubs) ? e.targetClubs : [];
-          const matches = targets.some(t => t === clubIdStr || t === clubCustomId || t === clubName);
-          if (!matches) return false;
-        }
-        return true;
-      }
+    // Deduplicate combined events by _id
+    const combinedMap = new Map();
+    [...rawClubsEvents, ...rawSubmissions, ...rawAdminEvents].forEach(e => {
+      combinedMap.set(e._id.toString(), e);
     });
+    const events = Array.from(combinedMap.values());
 
     const eventIds = events.map(e => e._id);
     const pricingDetails = await PaidEventDetail.find({ event: { $in: eventIds } }).lean();
