@@ -454,7 +454,7 @@ export default function RegisteredEvents() {
                 maxWidth: '400px',
                 textAlign: 'center',
                 position: 'relative',
-                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', maxHeight: '85vh', overflowY: 'auto'
               }}
             >
               <button 
@@ -521,7 +521,7 @@ export default function RegisteredEvents() {
         @keyframes spin { to { transform: rotate(360deg); } }
         
         @media (max-width: 768px) {
-          .events-container { padding: 6rem 1.25rem 3rem 1.25rem !important; }
+          .events-container { padding: 6rem 1.25rem 8rem 1.25rem !important; }
           .header-flex { flex-direction: column !important; align-items: flex-start !important; gap: 1.5rem; margin-bottom: 2.5rem !important; }
           .header-title { font-size: 2.5rem !important; }
           
