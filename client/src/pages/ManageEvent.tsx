@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
-import { LayoutGrid, Plus, Bell, Search, Image as ImageIcon, MapPin, ChevronDown, CheckCircle, Users, Trophy, Edit2, Check, Trash2, Download, Link as LinkIcon, Send, User, Mail, Phone, Calendar, X, Menu, FileText, Repeat } from 'lucide-react';
+import { LayoutGrid, Plus, Bell, Search, Image as ImageIcon, MapPin, ChevronDown, ChevronLeft, CheckCircle, Users, Trophy, Edit2, Check, Trash2, Download, Link as LinkIcon, Send, User, Mail, Phone, Calendar, X, Menu, FileText, Repeat } from 'lucide-react';
 import darkLogo from '../logo/dark logo.png';
 import Footer from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -2630,6 +2630,22 @@ export default function ManageEvent() {
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="mobile-main" style={{ flex: 1, padding: '6rem 2rem 3rem 2rem', maxWidth: '1000px', margin: '0 auto', width: '100%', position: 'relative', zIndex: 10 }}>
+
+          {/* Back Button */}
+          <button 
+            onClick={() => window.location.hash = user?.role === 'admin' ? '#admin' : '#organizer-dashboard/my-events'} 
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '6px', 
+              background: 'none', border: 'none', cursor: 'pointer', 
+              color: '#666', fontWeight: 600, fontSize: '0.9rem', 
+              padding: 0, marginBottom: '1.5rem',
+              transition: 'color 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.color = '#111'}
+            onMouseOut={(e) => e.currentTarget.style.color = '#666'}
+          >
+            <ChevronLeft size={16} /> Back to My Events
+          </button>
 
         {/* Header & Button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
