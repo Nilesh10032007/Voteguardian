@@ -630,9 +630,14 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
         if (isTeam && currentStep > 0 && isShiftOrDateQuestion(q.question)) {
           continue;
         }
+        const answeredVal = m.customAnswers?.find(a => a.question === q.question);
         if (q.required === 'Required' || q.required === true) {
-          const answered = m.customAnswers?.find(a => a.question === q.question);
-          if (!answered || !answered.answer) return { valid: false, message: `Question "${q.question}" is required` };
+          if (!answeredVal || !answeredVal.answer) return { valid: false, message: `Question "${q.question}" is required` };
+        }
+        if (answeredVal && answeredVal.answer && q.question.toLowerCase().includes('roll number') && event.title?.toLowerCase().includes('fresher')) {
+          if (!String(answeredVal.answer).trim().startsWith('26')) {
+            return { valid: false, message: "invalid roll no you must be of first year" };
+          }
         }
       }
     }
@@ -648,9 +653,14 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
       if (isTeam && currentStep > 0 && isShiftOrDateQuestion(eInfo.name)) {
         continue;
       }
+      const answeredValEdu = m.customAnswers?.find(a => a.question === eInfo.name);
       if (eInfo.required === 'Required') {
-        const answered = m.customAnswers?.find(a => a.question === eInfo.name);
-        if (!answered || !answered.answer) return { valid: false, message: `Field "${eInfo.name}" is required` };
+        if (!answeredValEdu || !answeredValEdu.answer) return { valid: false, message: `Field "${eInfo.name}" is required` };
+      }
+      if (answeredValEdu && answeredValEdu.answer && eInfo.name.toLowerCase().includes('roll number') && event.title?.toLowerCase().includes('fresher')) {
+        if (!String(answeredValEdu.answer).trim().startsWith('26')) {
+          return { valid: false, message: "invalid roll no you must be of first year" };
+        }
       }
     }
 
@@ -664,9 +674,14 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
     for (let q of (currentSectionData.questions || [])) {
       if (q.type === 'Header Text / Note' || q.type?.includes('Header Text')) continue;
       if (isTeam && currentStep > 0 && isShiftOrDateQuestion(q.question)) continue;
+      const answeredValSec = m.customAnswers?.find(a => a.question === q.question);
       if (q.required === 'Required' || q.required === true) {
-        const answered = m.customAnswers?.find(a => a.question === q.question);
-        if (!answered || !answered.answer) return { valid: false, message: `Question "${q.question}" on ${currentSectionData.title || `Page ${activeSection + 1}`} is required` };
+        if (!answeredValSec || !answeredValSec.answer) return { valid: false, message: `Question "${q.question}" on ${currentSectionData.title || `Page ${activeSection + 1}`} is required` };
+      }
+      if (answeredValSec && answeredValSec.answer && q.question.toLowerCase().includes('roll number') && event.title?.toLowerCase().includes('fresher')) {
+        if (!String(answeredValSec.answer).trim().startsWith('26')) {
+          return { valid: false, message: "invalid roll no you must be of first year" };
+        }
       }
     }
     return { valid: true };
@@ -1159,6 +1174,9 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                                 placeholder={`Enter ${eInfo.name.toLowerCase()}`}
                                 style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', resize: 'none', overflowY: 'hidden', minHeight: '48px', boxSizing: 'border-box', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                               />
+                              {eInfo.name.toLowerCase().includes('roll number') && event.title?.toLowerCase().includes('fresher') && val && !String(val).trim().startsWith('26') && (
+                                <span style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.2rem' }}>invalid roll no you must be of first year</span>
+                              )}
                             </div>
                           );
                         })}
@@ -1265,6 +1283,9 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                                 placeholder="Type your answer here..."
                                 style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', resize: 'none', overflowY: 'hidden', minHeight: '48px', boxSizing: 'border-box' }}
                               />
+                              {q.question.toLowerCase().includes('roll number') && event.title?.toLowerCase().includes('fresher') && val && !String(val).trim().startsWith('26') && (
+                                <span style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.2rem' }}>invalid roll no you must be of first year</span>
+                              )}
                             </div>
                           );
                         })}
