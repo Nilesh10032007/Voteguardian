@@ -1894,18 +1894,22 @@ function ParticipantsTab({ event }: { event: any }) {
                   return ansStr.toString();
                 }).filter(Boolean);
                 
-                const dn = p.name || customAnswers[0] || 'N/A';
-                const de = p.email || (p.name ? '' : customAnswers[1]) || '';
-                const dp = p.phone || (p.name ? '' : customAnswers[2]) || '';
+                const ansName = p.answers?.find((a:any) => a.question?.toLowerCase() === 'name' || a.question?.toLowerCase() === 'full name')?.answer;
+                const ansEmail = p.answers?.find((a:any) => a.question?.toLowerCase().includes('mail') || a.question?.toLowerCase().includes('email'))?.answer;
+                const ansPhone = p.answers?.find((a:any) => (a.question?.toLowerCase().includes('phone') || a.question?.toLowerCase().includes('mobile') || a.question?.toLowerCase().includes('number')) && !a.question?.toLowerCase().includes('roll'))?.answer;
+                
+                const dn = p.name || ansName || customAnswers[0] || 'Participant';
+                const de = p.email || ansEmail || (p.name || ansName ? '' : customAnswers[1]) || '';
+                const dp = p.phone || ansPhone || (p.name || ansName ? '' : customAnswers[2]) || '';
                 
                 return (
                 <div key={p.id || i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', padding: '12px 1rem', borderRadius: '8px', border: '1px solid #eaeaea', flexWrap: 'wrap', gap: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '220px' }}>
-                    <UserAvatar name={p.name} avatar={p.avatar} size={36} />
-                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{p.name || 'Participant'}</span>
+                    <UserAvatar name={dn} avatar={p.avatar} size={36} />
+                    <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{dn}</span>
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: '#666', minWidth: '150px' }}>{p.email || '-'}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#666' }}>{p.phone || '-'}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#666', minWidth: '150px' }}>{de || '-'}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#666' }}>{dp || '-'}</div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: 'auto' }}>
                     <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#22c55e' }}>{p.status}</span>
@@ -1937,19 +1941,23 @@ function ParticipantsTab({ event }: { event: any }) {
                     return ansStr.toString();
                   }).filter(Boolean);
                   
-                  const dn = p.name || customAnswers[0] || 'N/A';
-                  const de = p.email || (p.name ? '' : customAnswers[1]) || '';
-                  const dp = p.phone || (p.name ? '' : customAnswers[2]) || '';
+                  const ansName = p.answers?.find((a:any) => a.question?.toLowerCase() === 'name' || a.question?.toLowerCase() === 'full name')?.answer;
+                  const ansEmail = p.answers?.find((a:any) => a.question?.toLowerCase().includes('mail') || a.question?.toLowerCase().includes('email'))?.answer;
+                  const ansPhone = p.answers?.find((a:any) => (a.question?.toLowerCase().includes('phone') || a.question?.toLowerCase().includes('mobile') || a.question?.toLowerCase().includes('number')) && !a.question?.toLowerCase().includes('roll'))?.answer;
+                  
+                  const dn = p.name || ansName || customAnswers[0] || 'Participant';
+                  const de = p.email || ansEmail || (p.name || ansName ? '' : customAnswers[1]) || '';
+                  const dp = p.phone || ansPhone || (p.name || ansName ? '' : customAnswers[2]) || '';
                   
                   return (
                   <div key={p.id || i} style={{ background: '#fff', border: '1px solid #eaeaea', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <UserAvatar name={p.name} avatar={p.avatar} size={48} />
+                        <UserAvatar name={dn} avatar={p.avatar} size={48} />
                         <div>
-                          <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: '6px' }}>{p.name || 'Participant'} {p.isTeam && <span style={{ fontSize: '0.75rem', background: '#FEF3C7', color: '#D97706', padding: '2px 6px', borderRadius: '4px' }}>👑 Leader</span>}</h4>
-                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '2px' }}>{p.email || '-'}</div>
-                          <div style={{ fontSize: '0.8rem', color: '#666' }}>{p.phone || '-'}</div>
+                          <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#111', display: 'flex', alignItems: 'center', gap: '6px' }}>{dn} {p.isTeam && <span style={{ fontSize: '0.75rem', background: '#FEF3C7', color: '#D97706', padding: '2px 6px', borderRadius: '4px' }}>👑 Leader</span>}</h4>
+                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '2px' }}>{de || '-'}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#666' }}>{dp || '-'}</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
