@@ -1174,7 +1174,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                                 placeholder={`Enter ${eInfo.name.toLowerCase()}`}
                                 style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', resize: 'none', overflowY: 'hidden', minHeight: '48px', boxSizing: 'border-box', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                               />
-                              {eInfo.name.toLowerCase().includes('roll number') && event.title?.toLowerCase().includes('fresher') && val && !String(val).trim().startsWith('26') && (
+                              {eInfo.name.toLowerCase().includes('roll number') && event.title?.toLowerCase().includes('fresher') && val && String(val).trim().length >= 2 && !String(val).trim().startsWith('26') && (
                                 <span style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.2rem' }}>invalid roll no you must be of first year</span>
                               )}
                             </div>
@@ -1283,7 +1283,7 @@ export const RegisterView = ({ event, onBack }: { event: any, onBack: () => void
                                 placeholder="Type your answer here..."
                                 style={{ width: '100%', padding: '0.85rem 1rem', background: val ? '#ffffff' : '#F3F4F6', border: val ? '1px solid #cbd5e1' : '1px solid transparent', borderRadius: '8px', color: '#111', outline: 'none', fontSize: '0.95rem', fontFamily: 'inherit', resize: 'none', overflowY: 'hidden', minHeight: '48px', boxSizing: 'border-box' }}
                               />
-                              {q.question.toLowerCase().includes('roll number') && event.title?.toLowerCase().includes('fresher') && val && !String(val).trim().startsWith('26') && (
+                              {q.question.toLowerCase().includes('roll number') && event.title?.toLowerCase().includes('fresher') && val && String(val).trim().length >= 2 && !String(val).trim().startsWith('26') && (
                                 <span style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '0.2rem' }}>invalid roll no you must be of first year</span>
                               )}
                             </div>

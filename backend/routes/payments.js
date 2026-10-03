@@ -92,6 +92,17 @@ router.post('/create-order', requireAuth, async (req, res) => {
     const dateAnsObj = customAnswers.find(a => a.question && a.question.toLowerCase().includes('date'));
     const selectedDate = dateAnsObj ? (Array.isArray(dateAnsObj.answer) ? dateAnsObj.answer[0] : dateAnsObj.answer) : null;
 
+    // Backend validation: Fresher event roll number must start with 26
+    if (event.title && event.title.toLowerCase().includes('fresher')) {
+      const rollAnsObj = customAnswers.find(a => a.question && a.question.toLowerCase().includes('roll number'));
+      if (rollAnsObj && rollAnsObj.answer) {
+        const rollStr = String(rollAnsObj.answer).trim();
+        if (!rollStr.startsWith('26')) {
+          return res.status(400).json({ message: 'Invalid Roll Number: You must be a first-year student.' });
+        }
+      }
+    }
+
     // Physiofest Special Category Limit Checks (Per day limits)
     const targetCategory = req.body.selectedTicket || req.body.ticketType || req.body.ticketCategory || '';
     const lowerCat = String(targetCategory).toLowerCase();
