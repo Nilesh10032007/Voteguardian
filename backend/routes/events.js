@@ -1121,6 +1121,17 @@ router.get('/:id/participants', requireAuth, async (req, res) => {
     }
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
+    // Authorization Check: Only Admin or Event Organizer can view participants
+    let isOwner = false;
+    
+    if (event.createdBy && event.createdBy.toString() === req.user._id.toString()) isOwner = true;
+    if (event.organizer && event.organizer.toString() === req.user._id.toString()) isOwner = true;
+    if (event.organizer && req.user.name && event.organizer.toString().toLowerCase() === req.user.name.toLowerCase()) isOwner = true;
+
+    if (!isOwner && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden: You are not authorized to view participants of this event' });
+    }
+
     // Also fetch paid registrations
     const paidRegistrations = await PaidRegistration.find({ event: event._id, status: 'completed' }).populate('user', 'name email phone avatar').lean();
 
@@ -1333,6 +1344,17 @@ router.post('/:id/register', requireAuth, async (req, res) => {
     const customAnswers = req.body.customAnswers || req.body.teamMembers?.[0]?.customAnswers || [];
     const dateAnsObj = customAnswers.find(a => a.question && a.question.toLowerCase().includes('date'));
     const selectedDate = dateAnsObj ? (Array.isArray(dateAnsObj.answer) ? dateAnsObj.answer[0] : dateAnsObj.answer) : null;
+
+    // Backend validation: Fresher event roll number must start with 26
+    if (event.title && event.title.toLowerCase().includes('fresher')) {
+      const rollAnsObj = customAnswers.find(a => a.question && a.question.toLowerCase().includes('roll number'));
+      if (rollAnsObj && rollAnsObj.answer) {
+        const rollStr = String(rollAnsObj.answer).trim();
+        if (!rollStr.startsWith('26')) {
+          return res.status(400).json({ message: 'Invalid Roll Number: You must be a first-year student.' });
+        }
+      }
+    }
 
     // Physiofest Special Category Limit Checks (Per day limits)
     const targetCategory = req.body.ticketType || req.body.selectedTicket || req.body.ticketCategory || '';
